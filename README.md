@@ -27,22 +27,14 @@
 0. Linux / MacOS is recommended.
 1. Python 3.13+
 2. Install Conda or Mamba, see [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) or [Mamba](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install)
-2. Install the python packages mananger `pixi` by running the following command:
-```bash
-# Linux / MacOS
-curl -fsSL https://pixi.sh/install.sh | bash
-# Windows
-powershell -ExecutionPolicy ByPass -c "irm -useb https://pixi.sh/install.ps1 | iex"
-```
 
 ### Virtual Environment
 
+1. Create a virtual environment and activate it
 ```bash
-pixi install
-# Check the environment directory
-conda config --show envs_dirs
-# replace the path and conda-name like `careerhack`
-ln -s /path/to/project/.pixi/envs/default /path/to/conda/bash/envs/conda-name
+# or use mamba
+conda env create -f environment.yml
+conda activate careerhack
 ```
 
 If you operating system is Linux or MacOS, you can run the following command to quickly setup the **ALL** environment:
