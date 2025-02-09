@@ -26,7 +26,7 @@ location = "us-central1"
 # 使用 manual_decoding_config 指定音訊格式與取樣率
 streaming_config = cloud_speech.StreamingRecognitionConfig(
     config=cloud_speech.RecognitionConfig(
-        language_codes=["cmn-Hant-TW"],
+        language_codes=["de-DE"],
         model="chirp_2",
         features=cloud_speech.RecognitionFeatures(enable_automatic_punctuation=True),
         explicit_decoding_config=cloud_speech.ExplicitDecodingConfig(
@@ -53,8 +53,7 @@ audio_path = "dataset/training.wav"
 audio = AudioSegment.from_wav(audio_path)
 audio = audio.set_channels(1).set_frame_rate(16000)
 
-# 每 750 毫秒為一個 chunk（約 24KB）
-CHUNK_MS = 750
+CHUNK_MS = 800
 chunks = [audio[i : i + CHUNK_MS] for i in range(0, len(audio), CHUNK_MS)]
 
 config_request = cloud_speech.StreamingRecognizeRequest(
