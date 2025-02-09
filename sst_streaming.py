@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
+print(PROJECT_ID)
 
 client = SpeechClient(
     client_options=ClientOptions(

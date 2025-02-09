@@ -22,13 +22,15 @@
 
 ## Usage
 
-### Prerequisites
+### Linux
+
+#### Prerequisites
 
 0. Linux / MacOS is recommended.
 1. Python 3.13+
 2. Install Conda or Mamba, see [Conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) or [Mamba](https://github.com/conda-forge/miniforge?tab=readme-ov-file#install)
 
-### Virtual Environment
+#### Virtual Environment
 
 1. Create a virtual environment and activate it
 ```bash
@@ -42,7 +44,7 @@ If you operating system is Linux or MacOS, you can run the following command to 
 make setup
 ```
 
-### Gcloud Setup
+#### Gcloud Setup
 
 1. Set up the `gcloud`
 ```bash
@@ -56,3 +58,44 @@ unzip dataset/Training.zip -d dataset/
 # or
 make download
 ```
+
+### Windows
+
+#### Virtual Environment
+
+1. Create a virtual environment and activate it
+```bash
+conda create --name careerhack python=3.13.1 -y
+conda activate careerhack
+```
+
+2. Install the required packages
+```bash
+pip install -r requirements.txt
+```
+
+#### Gcloud Setup
+
+1. Set up the `gcloud` **by powershell**
+```powershell
+(New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe")
+
+& $env:Temp\GoogleCloudSDKInstaller.exe
+```
+
+2. Add the `.env` file and add the following content
+```plaintext
+GOOGLE_CLOUD_PROJECT = tsmccareerhack2025-icsd-grp1
+```
+
+3. Login to Google Cloud
+```powershell
+gcloud auth application-default login
+```
+
+#### ffmpeg
+
+1. Download the ffmpeg from [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z) and install it.
+
+2. Set the environment variable
+Add the environment variable `C:\Program Files\[ffmpeg-name]\bin`
