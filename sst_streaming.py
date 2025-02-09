@@ -1,5 +1,3 @@
-import io
-import time
 import os
 from google.api_core.client_options import ClientOptions
 from google.cloud.speech_v2 import SpeechClient
@@ -7,15 +5,23 @@ from google.cloud.speech_v2.types import cloud_speech
 from pydub import AudioSegment
 from dotenv import load_dotenv
 
+import pandas as pd
+
+glossaries = pd.read_csv("dataset/cmn-Hant-TW.csv", header=0)
+proper_nouns = glossaries["Proper Noun "].tolist()
+special_phrase = ["BigQuery"]
+phrases = [{"value": phrase, "boost": 10 if phrase not in special_phrase else 20} for phrase in proper_nouns]
+
 load_dotenv()
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
-print(PROJECT_ID)
 
 client = SpeechClient(
     client_options=ClientOptions(
         api_endpoint="us-central1-speech.googleapis.com",
     )
 )
+
+location = "us-central1"
 
 # 使用 manual_decoding_config 指定音訊格式與取樣率
 streaming_config = cloud_speech.StreamingRecognitionConfig(
@@ -28,6 +34,13 @@ streaming_config = cloud_speech.StreamingRecognitionConfig(
             sample_rate_hertz=16000,
             audio_channel_count=1,
         ),
+        adaptation=cloud_speech.SpeechAdaptation(
+            phrase_sets=[
+                cloud_speech.SpeechAdaptation.AdaptationPhraseSet(
+                    inline_phrase_set=cloud_speech.PhraseSet(phrases=phrases)
+                )
+            ]
+        ) if phrases else None,
     ),
     streaming_features=cloud_speech.StreamingRecognitionFeatures(
         # interim_results=True,
@@ -45,7 +58,7 @@ CHUNK_MS = 750
 chunks = [audio[i : i + CHUNK_MS] for i in range(0, len(audio), CHUNK_MS)]
 
 config_request = cloud_speech.StreamingRecognizeRequest(
-    recognizer=f"projects/{PROJECT_ID}/locations/us-central1/recognizers/_",
+    recognizer=f"projects/{PROJECT_ID}/locations/{location}/recognizers/_",
     streaming_config=streaming_config,
 )
 
@@ -55,7 +68,6 @@ def audio_generator():
     for chunk in chunks:
         raw_audio = chunk.raw_data
         yield cloud_speech.StreamingRecognizeRequest(audio=raw_audio)
-        # time.sleep(CHUNK_MS / 1000)
 
 
 response = client.streaming_recognize(requests=audio_generator())
