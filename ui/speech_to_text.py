@@ -22,16 +22,14 @@ def find_definitions(text, dictionary):
             # print(f"🔍 發現名詞：{term}，解釋：{dictionary[term]}")
     return found_terms
 
-def record_and_transcribe(mode):
+def record_and_transcribe():
     """錄音直到 5 秒內無輸入，然後轉換語音為文字並翻譯"""
     recognizer = sr.Recognizer()
-    dictionary = load_dictionary()  # 載入詞庫
+    # dictionary = load_dictionary()  # 載入詞庫
 
     with sr.Microphone() as source:
         print("請開始說話...")
         recognizer.adjust_for_ambient_noise(source)  # 降噪
-
-        print(f"🎤 語音模式：{mode}")
 
         try:
             # 設定 timeout=5，當 5 秒內無輸入時結束
@@ -48,17 +46,16 @@ def record_and_transcribe(mode):
 
             # **如果是精確模式，則查詢詞典**
             definitions = {}
-            if mode == "精確模式":
-                definitions = find_definitions(text_cn, dictionary)
+            # definitions = find_definitions(text_cn, dictionary)
 
-            # 儲存到會議紀錄（附上時間）
-            timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ")
-            with open("history.txt", "a", encoding="utf-8") as f:
-                f.write(f"{timestamp} 中文: {text_cn} | 英文: {text_en} | 德文: {text_de} | 日文: {text_ja}\n")
+            # # 儲存到會議紀錄（附上時間）
+            # timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ")
+            # with open("history.txt", "a", encoding="utf-8") as f:
+            #     f.write(f"{timestamp} 中文: {text_cn} | 英文: {text_en} | 德文: {text_de} | 日文: {text_ja}\n")
 
-                # 如果有名詞解釋，儲存到紀錄
-                if definitions:
-                    f.write(f"🔍 名詞解釋: {json.dumps(definitions, ensure_ascii=False)}\n")
+                # # 如果有名詞解釋，儲存到紀錄
+                # if definitions:
+                #     f.write(f"🔍 名詞解釋: {json.dumps(definitions, ensure_ascii=False)}\n")
 
             print("defintions", definitions)
 

@@ -15,6 +15,7 @@
             padding: 2px 4px;
             cursor: pointer;
         }
+
         .output-box {
             min-height: 50px;
             /* 確保高度一致 */
@@ -32,72 +33,12 @@
             overflow: auto;
             /* 超出範圍時顯示滾動條 */
         }
-
-        .toggle-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
-        }
-
-        .toggle-checkbox {
-            opacity: 0;
-            position: absolute;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-label {
-            width: 50px;
-            height: 26px;
-            background: #ddd;
-            border-radius: 50px;
-            position: relative;
-            cursor: pointer;
-            transition: background 0.3s ease-in-out;
-        }
-
-        .toggle-circle {
-            width: 22px;
-            height: 22px;
-            background: white;
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 3px;
-            transform: translateY(-50%);
-            transition: left 0.3s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .toggle-checkbox:checked+.toggle-label {
-            background: #4CAF50;
-        }
-
-        .toggle-checkbox:checked+.toggle-label .toggle-circle {
-            left: 25px;
-        }
     </style>
 </head>
 
 <body>
     <div class="container mt-4">
         <h2>🎙️ 語音轉文字（支援多語言）</h2>
-
-        <!-- 直接放入 iOS 風格開關 -->
-        <div class="center">
-            <div class="toggle-container">
-                <span class="toggle-label-left" id="mode-text">標準模式</span>
-                <input type="checkbox" id="mode-switch" class="toggle-checkbox">
-                <label for="mode-switch" class="toggle-label">
-                    <span class="toggle-circle"></span>
-                </label>
-                <span class="toggle-label-right">精確模式</span>
-            </div>
-        </div>
 
         <!-- 錄音按鈕 -->
         <button id="record-btn" class="btn btn-primary mt-3">🎤 開始錄音</button>
@@ -125,42 +66,31 @@
         <a href="index.html" class="btn btn-secondary mt-4">🏠 返回首頁</a>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
     <script>
         $(document).ready(function () {
-            let mode = "標準模式";  // 預設模式
+            const socket = io("http://127.0.0.1:5000");
 
-            // 監聽模式切換
-            $("#mode-switch").change(function () {
-                mode = $(this).is(":checked") ? "精確模式" : "標準模式";
-                console.log("🔄 模式已切換為：" + mode);
-            });
-
-
+            // 按下錄音按鈕，發送 WebSocket 請求
             $("#record-btn").click(function () {
                 console.log("🎤 開始錄音...");
-                $.ajax({
-                    url: "http://127.0.0.1:5000/run_speech_to_text",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({ mode: mode }),
-                    success: function (response) {
-                        console.log("📢 收到後端回應：", response);
+                socket.emit("start_speech", {});
+            });
 
-                        // **中文輸出用 .html()，因為它有高亮標記**
-                        $("#output-zh").html(highlightTerms(response.zh, response.definitions));
+            // 監聽 WebSocket 回傳的語音結果
+            socket.on("speech_result", function (response) {
+                console.log("📢 收到後端回應：", response);
 
-                        // **其他語言用 .val()，因為它們不需要 HTML**
-                        $("#output-en").text(response.en);
-                        $("#output-de").text(response.de);
-                        $("#output-ja").text(response.ja);
+                // **中文輸出用 .html()，因為它有高亮標記**
+                $("#output-zh").html(highlightTerms(response.zh, response.definitions));
 
-                        // 啟用 Bootstrap Tooltip
-                        $('[data-bs-toggle="tooltip"]').tooltip();
-                    },
-                    error: function () {
-                        alert("錄音失敗，請確認 Flask 伺服器是否運行！");
-                    }
-                });
+                // **其他語言用 .text()，因為它們不需要 HTML**
+                $("#output-en").text(response.en);
+                $("#output-de").text(response.de);
+                $("#output-ja").text(response.ja);
+
+                // 啟用 Bootstrap Tooltip
+                $('[data-bs-toggle="tooltip"]').tooltip();
             });
         });
 
