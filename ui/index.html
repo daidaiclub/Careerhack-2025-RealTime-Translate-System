@@ -1,17 +1,115 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>語音轉文字應用</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會議記錄系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  </link>
 </head>
-<body class="text-center">
-    <div class="container mt-5">
-        <h2>🗣️ 多語言語音識別應用</h2>
-        <a href="speech_to_text.html" class="btn btn-primary btn-lg mt-3">🎤 語音轉文字</a>
-        <a href="search_meeting.html" class="btn btn-success btn-lg mt-3">📜 會議紀錄查找</a>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <span class="navbar-brand">會議記錄系統</span>
+        <ul class="list-unstyled">
+          <li><i class="fas fa-plus"></i> <span class="ms-2">新增會議</span></li>
+          <li>DDR Ratio</li>
+        </ul>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content">
+        <div class="d-flex justify-content-between mb-3">
+          <h3>新會議</h3>
+          <div class="d-flex">
+            <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="上傳音檔">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </button>
+            <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="開始錄音">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="複製">
+              <i class="fas fa-copy"></i>
+            </button>
+            <select class="form-select mode-select me-2" aria-label="模式選擇" title="選擇模式">
+              <option value="precision">精準模式</option>
+              <option value="speed">快速模式</option>
+            </select>
+            <select class="form-select language-select" aria-label="語言選擇" title="選擇語言">
+              <option value="chinese">中文</option>
+              <option value="english">英文</option>
+              <option value="german">德語</option>
+              <option value="japanese">日語</option>
+            </select>
+          </div>
+        </div>
+        <div class="editor">
+          <textarea class="form-control" placeholder="開始會議記錄..."></textarea>
+        </div>
+      </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </div>
+
+  <!-- AI Chatbot -->
+  <div class="chatbot">
+    <div class="d-flex">
+      <strong>AI Chatbot</strong>
+      <button class="btn btn-icon ms-auto" id="close-chatbot">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <input type="text" id="chat-input" class="form-control mt-2" placeholder="輸入訊息..." />
+  </div>
+
+  <div id="open-chatbot">
+    <i class="fas fa-robot"></i>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    $('#open-chatbot').click(function () {
+      $('.chatbot').css('right', '0');
+      $('.content').css('width', 'calc(85% - 450px)');
+      $('#open-chatbot').hide(); // Hide button after opening chatbot
+    });
+
+    $('#close-chatbot').click(function () {
+      $('.chatbot').css('right', '-450px');
+      $('.content').css('width', '85%');
+      $('#open-chatbot').show(); // Show button after closing chatbot
+    });
+
+    $('#chat-input').on('keypress', function (event) {
+      if (event.which === 13) {  // Enter key
+        var userInput = $('#chat-input').val();
+        if (userInput) {
+          $('#chat-messages').append(`
+            <div class="message-container user">
+              <div class="message-user">${userInput}</div>
+            </div>
+          `);
+          $('#chat-input').val('');
+          $('#chat-messages').append(`
+            <div class="message-container ai">
+              <div class="message-ai">已經為您找到有關 DDR Ratio 的會議</div>
+            </div>
+          `);
+
+          $('#chat-messages').animate({
+            scrollTop: $('#chat-messages').get(0).scrollHeight
+          }, 1000);
+        }
+      }
+    });
+  </script>
 </body>
+
 </html>
