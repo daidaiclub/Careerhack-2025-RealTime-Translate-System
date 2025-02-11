@@ -30,6 +30,11 @@ body {
   background-color: #333;
 }
 
+.list-unstyled li {
+  display: flex;
+  align-items: center;
+}
+
 .navbar-brand {
   font-size: 28px;
   font-weight: bold;
@@ -53,6 +58,20 @@ body {
   flex-grow: 1;
   overflow-y: auto;
 }
+
+#meeting-title {
+  margin-right: 4px; 
+}
+
+#edit-title-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
 
 .chatbot {
   background-color: #222;
@@ -133,6 +152,8 @@ textarea.form-control {
 
 .message-container {
   display: flex;
+  justify-content: flex-end; 
+  margin-bottom: 10px;
 }
 
 .message-container.user {
@@ -152,6 +173,8 @@ textarea.form-control {
   margin-left: auto;
   text-align: left;
   max-width: 70%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .message-ai {
@@ -179,3 +202,13 @@ textarea.form-control {
 #open-chatbot:hover {
   background-color: #e0e0e0;
 }
+
+.chatbot-header {
+  padding: 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.chatbot-title {
+  font-size: 25px; 
+}
+

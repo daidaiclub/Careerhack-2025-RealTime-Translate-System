@@ -26,12 +26,17 @@
       <!-- Content Area -->
       <div class="content">
         <div class="d-flex justify-content-between mb-3">
-          <h3>新會議</h3>
+          <div class="d-flex align-items-center">
+            <h3 id="meeting-title" class="mb-0">新會議</h3>
+            <button class="btn btn-icon p-0 m-0" id="edit-title-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="編輯標題">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>          
           <div class="d-flex">
             <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="上傳音檔">
               <i class="fas fa-cloud-upload-alt"></i>
             </button>
-            <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="開始錄音">
+            <button class="btn btn-icon me-2" id="record-btn" data-bs-toggle="tooltip" data-bs-placement="top" title="開始錄音">
               <i class="fa-solid fa-microphone"></i>
             </button>
             <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="複製">
@@ -58,23 +63,48 @@
 
   <!-- AI Chatbot -->
   <div class="chatbot">
-    <div class="d-flex">
-      <strong>AI Chatbot</strong>
-      <button class="btn btn-icon ms-auto" id="close-chatbot">
+    <div class="d-flex align-items-center justify-content-between chatbot-header">
+      <strong class="chatbot-title">AI Chatbot</strong>
+      <button class="btn btn-icon" id="close-chatbot">
         <i class="fas fa-times"></i>
       </button>
-    </div>
+    </div>    
     <div id="chat-messages" class="chat-messages"></div>
     <input type="text" id="chat-input" class="form-control mt-2" placeholder="輸入訊息..." />
   </div>
 
-  <div id="open-chatbot">
+  <div id="open-chatbot" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow">
     <i class="fas fa-robot"></i>
-  </div>
+  </div>  
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+
+    $(document).ready(function () {
+      $("#edit-title-btn").click(function () {
+        var currentTitle = $("#meeting-title").text();
+        var newTitle = prompt("請輸入新的會議標題：", currentTitle);
+        
+        if (newTitle !== null && newTitle.trim() !== "") {
+          $("#meeting-title").text(newTitle);
+        }
+      });
+    });
+    
+    $(document).ready(function () {
+      $("#record-btn").click(function () {
+        var icon = $(this).find("i");
+        if (icon.hasClass("fa-microphone")) {
+          icon.removeClass("fa-microphone").addClass("fa-pause");
+          $(this).attr("title", "暫停錄音"); 
+        } else {
+          icon.removeClass("fa-pause").addClass("fa-microphone");
+          $(this).attr("title", "開始錄音"); 
+        }
+      });
+    });    
+
     $('#open-chatbot').click(function () {
       $('.chatbot').css('right', '0');
       $('.content').css('width', 'calc(85% - 450px)');
