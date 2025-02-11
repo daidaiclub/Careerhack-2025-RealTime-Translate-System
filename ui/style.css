@@ -212,3 +212,48 @@ textarea.form-control {
   font-size: 25px; 
 }
 
+.vditor {
+  background-color: #1e1e1e !important; 
+  color: #ffffff !important; 
+  margin-top: 15px !important; 
+}
+
+.vditor-toolbar {
+  background-color: #2d2d2d !important; 
+  border-bottom: 1px solid #444 !important;
+}
+
+.vditor-toolbar button {
+  margin: 2px !important;
+  color: #ccc !important; 
+}
+
+.vditor-toolbar button:hover {
+  background-color: #444 !important;
+  color: white !important;
+}
+
+.vditor-content {
+  background-color: #1e1e1e !important; 
+  color: #ffffff !important; 
+}
+
+.vditor-content a {
+  color: #4fa3ff !important; 
+}
+
+.vditor-content blockquote {
+  color: #bbbbbb !important; 
+  border-left: 3px solid #888 !important; 
+}
+
+.vditor-preview {
+  background-color: #1e1e1e !important;
+  color: #ffffff !important;
+}
+
+.vditor-content pre, 
+.vditor-content code {
+  background-color: #292929 !important; 
+  color: #ffffff !important; 
+}
