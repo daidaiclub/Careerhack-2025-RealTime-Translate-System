@@ -1,4 +1,4 @@
-var socket = io("http://140.113.110.99:5000");
+var socket = io("http://127.0.0.1:5000");
 // socket.binaryType = "arraybuffer";
 let mediaRecorder;
 let language = "Traditional Chinese";
@@ -33,7 +33,7 @@ function uploadFile(file) {
   setUploadIcon("loading");
 
   $.ajax({
-    url: "http://140.113.110.99:5000/upload",
+    url: "http://127.0.0.1:5000/upload",
     type: "POST",
     data: formData,
     contentType: false,
