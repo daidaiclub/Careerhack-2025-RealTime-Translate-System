@@ -1,0 +1,31 @@
+Type,Proper Noun ,Description
+Fab,DDR Ratio,"Defective Dies Ratio: Ein Indikator für Wafer-Defekte, der bestimmt, ob ein Produktbatch verworfen wird. Diese Defekte beeinflussen die Ausbeute des Produkts."
+Fab,EC,"Maschineneinstellungen: Einige Parameter sind anpassbar, abhängig von den Prozessanforderungen. Einige, wie die Temperatur, sind jedoch festgelegt. Vor der Rückgabe der Maschine muss überprüft werden, ob die EC mit der Vorlage übereinstimmt."
+Fab,ECS,"Equipment Constant System: Verhindert das Risiko von Produktausschuss durch geänderte Maschinenparameter, ähnlich dem RMS eines Anlageningenieurs."
+Fab,ECCP,Zertifizierungsplan für Konstruktionsänderungen
+Fab,ECN,Änderungsmitteilung für Ingenieure
+Fab,Emergency stop,Not-Aus
+Fab,Alignment mark,"Markierung für den Referenzpunkt: Ein bestimmter, nicht symmetrischer und nicht wiederholter Punkt auf dem Wafer wird als Referenzpunkt für die Maschine gewählt."
+Fab,ALP,"Aktiver Ladeport (ALP): Wenn die zwei Ports der Maschine voll sind, wird die dritte Charge zum ALP geleitet. Nach Entleerung der Ports wird die Charge vom ALP zur Maschine transportiert."
+Fab,STB,"Produktionsstart, Wafer offline"
+Fab,STK,Stocker-Schränke
+Fab,Route,Prozessablauf
+Fab,Scrap,Ausschuss
+Fab,Sorter,Sortiermaschine
+Fab,Split,Konten- und Chargentrennung
+Fab,Nachtschicht,Nachtschicht
+Fab,Nachmittagsschicht,Spätschicht
+Fab,Tagschicht,Tagschicht
+Fab,Maske,Photomaske
+IT,DP ,Datenplattform: Eine Plattform zur Sammlung und Analyse von Systemlogs und Anomalien.
+IT,SGP,Sicheres GenAI-Plattform: Bietet sichere KI-Dienste.
+IT,ETP,"Unternehmensübersetzungsplattform: Bietet sichere und sofortige Übersetzungsdienste, einschließlich Sitzungsprotokollen und Abfragen."
+GCP,Cloud Run,"Cloud Run: Eine vollständig verwaltete Plattform zum Ausführen containerisierter Anwendungen. Sie unterstützt automatisches Skalieren und passt Ressourcen dynamisch an den Datenverkehr an, ideal für HTTP-gesteuerte Microservices."
+GCP,Cloud Function,"Cloud Function: Ein serverloser Computing-Dienst, der es Entwicklern ermöglicht, einfache, ereignisgesteuerte Funktionen ohne Serververwaltung zu schreiben."
+GCP,BigQuery,"BigQuery: Ein serverloses, hochskalierbares Data-Warehouse, das schnelle SQL-Abfragen für die Analyse großer Datensätze und Echtzeitanalysen bietet."
+GCP,Pub/Sub,"Pub/Sub: Ein Nachrichtendienst, der zuverlässige und skalierbare asynchrone Kommunikation zwischen Anwendungen ermöglicht, unterstützt ereignisgesteuerte Architekturen und Streaming-Datenverarbeitung."
+GCP,Cloud SQL,"Cloud SQL: Ein vollständig verwalteter relationaler Datenbankdienst, der MySQL, PostgreSQL und SQL Server unterstützt und eine einfache Konfiguration, Wartung und Verwaltung ermöglicht."
+GCP,Artifact Registry,"Artifact Registry: Ein verwalteter Dienst zur Speicherung von Container-Images, Paketen und anderen Artefakten, der sichere Speicherung und Versionskontrolle bietet."
+GCP,Cloud Storage,"Cloud Storage: Ein globales Objektspeichersystem, das hohe Verfügbarkeit, Beständigkeit und Sicherheit bietet, ideal für die Speicherung und den Abruf beliebiger Datentypen."
+GCP,GKE,"Google Kubernetes Engine: Ein verwalteter Kubernetes-Dienst, der die Verwaltung von Kubernetes-Clustern vereinfacht und Entwicklern ermöglicht, containerisierte Anwendungen einfach bereitzustellen, zu verwalten und zu skalieren."
+GCP,Vertex AI,"Vertex AI: Eine integrierte Plattform für maschinelles Lernen, die Werkzeuge für Datenvorbereitung, Training und Bereitstellung bietet, unterstützt automatisiertes maschinelles Lernen und die Entwicklung benutzerdefinierter Modelle."

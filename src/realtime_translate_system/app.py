@@ -17,10 +17,10 @@ translation_service = TranslationService()
 audio_queue = queue.Queue()
 thread_lock = threading.Lock()
 file_paths = {
-    "Traditional Chinese": "../dataset/cmn-Hant-TW.csv",
-    "English": "../dataset/en-US.csv",
-    "German": "../dataset/de-DE.csv",
-    "Japanese": "../dataset/ja-JP.csv"
+    "Traditional Chinese": "./realtime_translate_system/glossaries/cmn-Hant-TW.csv",
+    "English": "./realtime_translate_system/glossaries/en-US.csv",
+    "German": "./realtime_translate_system/glossaries/de-DE.csv",
+    "Japanese": "./realtime_translate_system/glossaries/ja-JP.csv"
 }
 matcher = TermMatcher(file_paths)
 

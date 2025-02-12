@@ -97,7 +97,7 @@ class GoogleSpeechRecognizer(SpeechRecognizer):
     def _load_glossaries(self) -> List[dict]:
         """載入術語表"""
         try:
-            glossaries = pd.read_csv("../../dataset/cmn-Hant-TW.csv", header=0)
+            glossaries = pd.read_csv("./realtime_translate_system/glossaries/cmn-Hant-TW.csv", header=0)
             proper_nouns = glossaries["Proper Noun "].dropna().tolist()
             special_phrase = ["BigQuery"]
             return [
