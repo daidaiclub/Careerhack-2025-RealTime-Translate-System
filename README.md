@@ -67,6 +67,27 @@ unzip dataset/Training.zip -d dataset/
 make download
 ```
 
+### Docker Development
+
+1. Build the Docker Image
+
+```bash
+docker build -t realtime-translate-system .
+```
+
+2. Run the Docker Container without GPU in powershell
+
+`grp-secret.json` is the Google Cloud Service Account Key.
+
+```bash
+docker run -it --name rt -p 5000:5000 --rm `
+  -v ${PWD}\grp-secret.json:/app/grp-secret.json:ro `
+  -v ${PWD}\src\realtime_translate_system:/app/realtime_translate_system `
+  -e GOOGLE_APPLICATION_CREDENTIALS="/app/grp-secret.json" `
+  -e GOOGLE_CLOUD_PROJECT="tsmccareerhack2025-icsd-grp1" `
+  realtime-translate-system flask run --debug
+```
+
 ### Windows
 
 #### Virtual Environment
