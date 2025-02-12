@@ -1,26 +1,86 @@
 import os
+import queue
+import pandas as pd
+import whisper
+from typing import Generator, List, Callable
 from google.api_core.client_options import ClientOptions
 from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 from pydub import AudioSegment
 from dotenv import load_dotenv
-import pandas as pd
-import queue
-from typing import Generator, List, Callable
 
 # 加載環境變數
 load_dotenv()
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 LOCATION = "us-central1"
 
-
 class SpeechRecognizer:
+    def transcribe(self, audio_path: str, callback: Callable[[str], None]):
+        raise NotImplementedError()
+    
+    def transcribe_streaming(self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]):
+        raise NotImplementedError()
+
+class WhisperSpeechRecognizer(SpeechRecognizer):
+    def __init__(self, model_size="large"):
+        self.model = whisper.load_model(model_size)
+
+    def transcribe(self, audio_path: str, callback: Callable[[str], None]):
+        """單次轉錄"""
+        result = self.model.transcribe(audio_path)
+        callback(result["text"])
+
+    def transcribe_streaming(self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]):
+        """模擬串流方式處理音訊佇列"""
+        tmp_audio = b""
+        chunk_size = 5  # 每 5 秒音訊轉錄一次
+        frame_rate = 16000  # Whisper 預設 16kHz
+        sample_width = 2  # 16-bit PCM
+
+        while True:
+            try:
+                audio = audio_queue.get(timeout=3)  # 嘗試從 queue 讀取音訊
+                if not audio:
+                    break
+                tmp_audio += audio
+            except queue.Empty:
+                break  # 若 queue 為空，則結束讀取
+
+            # 如果累積音訊達到 chunk_size 秒，則轉錄
+            audio_segment = AudioSegment(
+                data=tmp_audio,
+                sample_width=sample_width,
+                frame_rate=frame_rate,
+                channels=1
+            )
+
+            if len(audio_segment) >= chunk_size * 1000:  # 轉錄 5 秒音訊
+                audio_segment.export("tmp_chunk.wav", format="wav", codec="pcm_s16le")
+                result = self.model.transcribe("tmp_chunk.wav")
+                callback(result["text"])
+                tmp_audio = b""  # 清空累積的音訊
+
+        # 最後處理剩餘的音訊 (如果有)
+        if tmp_audio:
+            audio_segment = AudioSegment(
+                data=tmp_audio,
+                sample_width=sample_width,
+                frame_rate=frame_rate,
+                channels=1
+            )
+            audio_segment.export("tmp_final.wav", format="wav", codec="pcm_s16le")
+            result = self.model.transcribe("tmp_final.wav")
+            callback(result["text"])
+
+        done()  # 通知處理完成
+
+class GoogleSpeechRecognizer(SpeechRecognizer):
     _instance = None
 
     def __new__(cls):
         """確保 Singleton 模式"""
         if cls._instance is None:
-            cls._instance = super(SpeechRecognizer, cls).__new__(cls)
+            cls._instance = super(GoogleSpeechRecognizer, cls).__new__(cls)
             cls._instance._initialize()
         return cls._instance
 
@@ -73,7 +133,6 @@ class SpeechRecognizer:
         return cloud_speech.StreamingRecognitionConfig(
             config=cloud_speech.RecognitionConfig(
                 language_codes=["cmn-Hant-TW"],
-                # language_codes=["de-DE"],
                 model="chirp_2",
                 features=cloud_speech.RecognitionFeatures(
                     enable_automatic_punctuation=True
@@ -83,9 +142,7 @@ class SpeechRecognizer:
             ),
         )
 
-    def _prepare_audio_chunks(
-        self, audio_path: str, chunk_ms: int = 96
-    ) -> List[AudioSegment]:
+    def _prepare_audio_chunks(self, audio_path: str, chunk_ms: int = 96) -> List[AudioSegment]:
         """讀取音檔並分割為小塊"""
         try:
             audio = AudioSegment.from_wav(audio_path)
@@ -95,9 +152,7 @@ class SpeechRecognizer:
             print(f"❌ Error loading audio: {e}")
             return []
 
-    def _audio_generator(
-        self, audio_chunks: List[AudioSegment] = None, audio_queue: queue.Queue = None
-    ) -> Generator:
+    def _audio_generator(self, audio_chunks: List[AudioSegment] = None, audio_queue: queue.Queue = None) -> Generator:
         """建立音頻流發送請求"""
         config_request = cloud_speech.StreamingRecognizeRequest(
             recognizer=f"projects/{PROJECT_ID}/locations/{LOCATION}/recognizers/_",
@@ -128,8 +183,7 @@ class SpeechRecognizer:
             )
             audio.export("tmp.wav", format="wav", codec="pcm_s16le")
 
-
-    def transcribe(self, audio_path: str, callback=Callable[[str], None]):
+    def transcribe(self, audio_path: str, callback: Callable[[str], None]):
         """執行音頻轉錄"""
         audio_chunks = self._prepare_audio_chunks(audio_path)
         if not audio_chunks:
@@ -144,9 +198,7 @@ class SpeechRecognizer:
                 text = alt.alternatives[0].transcript
                 callback(text)
 
-    def transcribe_streaming(
-        self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]
-    ):
+    def transcribe_streaming(self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]):
         """處理麥克風錄音 Blob"""
         response = self.client.streaming_recognize(requests=self._audio_generator(audio_queue=audio_queue))
 
@@ -156,12 +208,11 @@ class SpeechRecognizer:
 
         done()
 
-
 # **測試使用**
 if __name__ == "__main__":
-    recognizer = SpeechRecognizer()
-
+    recognizer = GoogleSpeechRecognizer()
+    
     def callback(text):
         print(text)
-
+    
     recognizer.transcribe("../../dataset/training.wav", callback)
