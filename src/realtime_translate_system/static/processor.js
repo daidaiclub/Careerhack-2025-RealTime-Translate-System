@@ -14,7 +14,9 @@ async function startRecording() {
         deviceId: "default",
         sampleRate: sampleRate,
         sampleSize: 16,
-        channelCount: 1
+        channelCount: 1,
+        noiseSuppression: true, // ✅ 開啟內建降噪
+        echoCancellation: true // ✅ 取消回音
       },
       video: false
     });
@@ -69,3 +71,7 @@ $("#mic-btn").click(async function () {
     stopRecording();
   }
 });
+
+// $("#mic-btn").click(async function () {
+//   socket.emit("start_record");
+// });

@@ -5,14 +5,15 @@ import os
 import queue
 import threading
 from werkzeug.utils import secure_filename
-from realtime_translate_system.speech_recongizer import SpeechRecognizer
+from realtime_translate_system.speech_recongizer import WhisperSpeechRecognizer
 from realtime_translate_system.translate import TranslationService
 from realtime_translate_system.term_matcher import TermMatcher
+from realtime_translate_system.detect import Record
 
 app = Flask(__name__)
 CORS(app)  # 允許跨域請求
 socketio = SocketIO(app, cors_allowed_origins="*")  # WebSocket 支援
-recognizer = SpeechRecognizer()
+recognizer = WhisperSpeechRecognizer()
 translation_service = TranslationService()
 audio_queue = queue.Queue()
 thread_lock = threading.Lock()
@@ -90,9 +91,10 @@ def handle_audio_stream(data):
     try:
 
         def callback(text):
-            text = translation_service.translate(text)
-            text = matcher.process_multilingual_text(text)
-            socketio.emit("transcript_stream", text)
+            if text != "":
+                text = translation_service.translate(text)
+                text = matcher.process_multilingual_text(text)
+                socketio.emit("transcript_stream", text)
 
         def done():
             app.audio_task = None
@@ -110,6 +112,10 @@ def handle_audio_stream(data):
         audio_queue.put(data)
     except Exception as e:
         print(f"❌ Error processing audio stream: {e}")
+
+@socketio.on("start_record")
+def start_server():
+    Record()
 
 
 if __name__ == "__main__":

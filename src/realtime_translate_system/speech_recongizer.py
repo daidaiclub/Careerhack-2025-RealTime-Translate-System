@@ -8,6 +8,11 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 from pydub import AudioSegment
 from dotenv import load_dotenv
+import webrtcvad
+import numpy as np
+import torch
+import wave
+from datetime import datetime
 
 # 加載環境變數
 load_dotenv()
@@ -31,11 +36,40 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
         callback(result["text"])
 
     def transcribe_streaming(self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]):
-        """模擬串流方式處理音訊佇列"""
+        """串流處理音訊佇列，使用 WebRTC VAD 過濾靜音，並存檔 + 轉錄"""
+        
         tmp_audio = b""
-        chunk_size = 5  # 每 5 秒音訊轉錄一次
+        chunk_size = 4  # 每 2 秒音訊轉錄一次
         frame_rate = 16000  # Whisper 預設 16kHz
         sample_width = 2  # 16-bit PCM
+
+        vad = webrtcvad.Vad()
+        vad.set_mode(2)  # 模式 3：較嚴格的語音偵測
+
+        def is_speech(audio_frame: bytes) -> bool:
+            """檢查 30ms 音框是否包含語音"""
+            return vad.is_speech(audio_frame, sample_rate=frame_rate)
+
+        def save_audio(audio_bytes: bytes):
+            """將音訊存檔，使用時間戳作為檔名，並排除 0 秒音檔"""
+            if len(audio_bytes) < frame_rate * sample_width:  # 少於 1 秒則視為無效
+                print("⚠️ 忽略 0 秒音檔")
+                return None
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"recorded_{timestamp}.wav"
+            filepath = os.path.join("recordings", filename)
+
+            # 確保目錄存在
+            os.makedirs("recordings", exist_ok=True)
+
+            with wave.open(filepath, "wb") as wf:
+                wf.setnchannels(1)  # 單聲道
+                wf.setsampwidth(sample_width)  # 16-bit PCM
+                wf.setframerate(frame_rate)
+                wf.writeframes(audio_bytes)
+
+            return filepath
 
         while True:
             try:
@@ -43,36 +77,43 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
                 if not audio:
                     break
                 tmp_audio += audio
+                # print(f"Received {len(audio)} bytes")
             except queue.Empty:
                 break  # 若 queue 為空，則結束讀取
 
-            # 如果累積音訊達到 chunk_size 秒，則轉錄
-            audio_segment = AudioSegment(
-                data=tmp_audio,
-                sample_width=sample_width,
-                frame_rate=frame_rate,
-                channels=1
-            )
+            # 將音訊切割為 30ms 幀，過濾靜音
+            frame_size = int(frame_rate * 0.03) * sample_width  # 30ms frame size
+            speech_audio = b""
+            for i in range(0, len(tmp_audio), frame_size):
+                frame = tmp_audio[i : i + frame_size]
+                if len(frame) == frame_size and is_speech(frame):
+                    speech_audio += frame  # 只保留含有語音的片段
 
-            if len(audio_segment) >= chunk_size * 1000:  # 轉錄 5 秒音訊
-                audio_segment.export("tmp_chunk.wav", format="wav", codec="pcm_s16le")
-                result = self.model.transcribe("tmp_chunk.wav")
+            # 只有當累積的語音達到 chunk_size 秒才進行轉錄
+            if len(tmp_audio) >= chunk_size * frame_rate * sample_width:
+                # 轉存音訊
+                audio_path = save_audio(tmp_audio)
+                if audio_path is None:
+                    tmp_audio = b""  # 清空累積音訊
+                    continue  # 忽略 0 秒音檔
+                # 轉換音訊格式，直接傳 NumPy 陣列給 Whisper
+                audio_np = np.frombuffer(tmp_audio, dtype=np.int16).astype(np.float32) / 32768.0
+                result = self.model.transcribe(audio_np, fp16=torch.cuda.is_available())
+
+                print(f"[{audio_path}] {result['text']}")
                 callback(result["text"])
                 tmp_audio = b""  # 清空累積的音訊
 
-        # 最後處理剩餘的音訊 (如果有)
+        # 最後處理剩餘的有效語音 (如果有)
         if tmp_audio:
-            audio_segment = AudioSegment(
-                data=tmp_audio,
-                sample_width=sample_width,
-                frame_rate=frame_rate,
-                channels=1
-            )
-            audio_segment.export("tmp_final.wav", format="wav", codec="pcm_s16le")
-            result = self.model.transcribe("tmp_final.wav")
+            audio_path = save_audio(tmp_audio)
+            audio_np = np.frombuffer(tmp_audio, dtype=np.int16).astype(np.float32) / 32768.0
+            result = self.model.transcribe(audio_np, fp16=torch.cuda.is_available())
+            print(f"[{audio_path}] {result['text']}")
             callback(result["text"])
 
         done()  # 通知處理完成
+
 
 class GoogleSpeechRecognizer(SpeechRecognizer):
     _instance = None
