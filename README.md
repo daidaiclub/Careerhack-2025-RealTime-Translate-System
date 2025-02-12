@@ -13,11 +13,14 @@
 ## File Structure
 
 ```plaintext
-├── src            # Backend Source Code
-├── dataset        # CareerHack Dataset (including training and knowledge dataset)
-├── dataset.ipynb  # Preprocessing Dataset Notebook
-├── pyproject.toml # Python Project Configuration
-└── README.md
+├── src              # Source Code Directory
+├── dataset          # Dataset Folder (including CareerHack Dataset)
+├── Dockerfile       # Docker Configuration File
+├── environment.yaml # Conda Environment File
+├── Makefile         # Makefile for Setup and Commands
+├── README.md        # Project Documentation
+├── requirements.txt # Python Requirements File
+└── ui               # User Interface Code (Experimental)
 ```
 
 ## Usage
@@ -33,6 +36,7 @@
 #### Virtual Environment
 
 1. Create a virtual environment and activate it
+
 ```bash
 # or use mamba
 conda env create -f environment.yml
@@ -40,6 +44,7 @@ conda activate careerhack
 ```
 
 If you operating system is Linux or MacOS, you can run the following command to quickly setup the **ALL** environment:
+
 ```bash
 make setup
 ```
@@ -47,11 +52,14 @@ make setup
 #### Gcloud Setup
 
 1. Set up the `gcloud`
+
 ```bash
 gcloud init
 # Login with the CareerHack account
 ```
+
 2. Dataset download (Optional)
+
 ```bash
 gcloud cp gs://careerhack2025-icsd-resource-bucket/Training.zip dataset/
 unzip dataset/Training.zip -d dataset/
@@ -64,12 +72,14 @@ make download
 #### Virtual Environment
 
 1. Create a virtual environment and activate it
+
 ```bash
 conda create --name careerhack python=3.13.1 -y
 conda activate careerhack
 ```
 
 2. Install the required packages
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -77,6 +87,7 @@ pip install -r requirements.txt
 #### Gcloud Setup
 
 1. Set up the `gcloud` **by powershell**
+
 ```powershell
 (New-Object Net.WebClient).DownloadFile("https://dl.google.com/dl/cloudsdk/channels/rapid/GoogleCloudSDKInstaller.exe", "$env:Temp\GoogleCloudSDKInstaller.exe")
 
@@ -84,11 +95,13 @@ pip install -r requirements.txt
 ```
 
 2. Add the `.env` file and add the following content
+
 ```plaintext
 GOOGLE_CLOUD_PROJECT = tsmccareerhack2025-icsd-grp1
 ```
 
 3. Login to Google Cloud
+
 ```powershell
 gcloud auth application-default login
 ```
@@ -98,4 +111,4 @@ gcloud auth application-default login
 1. Download the ffmpeg from [ffmpeg](https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-full.7z) and install it.
 
 2. Set the environment variable
-Add the environment variable `C:\Program Files\[ffmpeg-name]\bin`
+   Add the environment variable `C:\Program Files\[ffmpeg-name]\bin`

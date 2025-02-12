@@ -8,3 +8,6 @@ __pycache__
 .env
 secret/
 tmp/
+tmp.*
+uploads/
+cloud-sql-proxy
