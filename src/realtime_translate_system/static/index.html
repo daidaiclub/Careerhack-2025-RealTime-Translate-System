@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>會議記錄系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <span class="navbar-brand">會議記錄系統</span>
+        <ul class="list-unstyled">
+          <li><i class="fas fa-plus"></i> <span class="ms-2">新增會議</span></li>
+          <li>DDR Ratio</li>
+        </ul>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content">
+        <div class="d-flex justify-content-between mb-3">
+          <div class="d-flex align-items-center">
+            <h3 id="meeting-title" class="mb-0">新會議</h3>
+            <button class="btn btn-icon p-0 m-0" id="edit-title-btn" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="編輯標題">
+              <i class="fas fa-edit"></i>
+            </button>
+          </div>
+          <div class="d-flex">
+            <input type="file" id="file-input" accept="audio/wav" style="display: none;">
+            <button class="btn btn-icon me-2" id="upload-btn" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="上傳音檔">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </button>
+            <button class="btn btn-icon me-2" id="mic-btn" data-bs-toggle="tooltip" data-bs-placement="top"
+              title="開始錄音">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button class="btn btn-icon me-2" data-bs-toggle="tooltip" data-bs-placement="top" title="複製">
+              <i class="fas fa-copy"></i>
+            </button>
+            <select class="form-select mode-select me-2" aria-label="模式選擇" title="選擇模式">
+              <option value="precision">精準模式</option>
+              <option value="speed">快速模式</option>
+            </select>
+            <select class="form-select language-select" id="language-select" aria-label="語言選擇" title="選擇語言">
+              <option value="Traditional Chinese">中文</option>
+              <option value="English">英文</option>
+              <option value="German">德語</option>
+              <option value="Japanese">日語</option>
+            </select>
+          </div>
+        </div>
+        <div class="editor">
+          <textarea class="form-control" id="transcript_area" placeholder="開始會議記錄..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chatbot -->
+  <div class="chatbot">
+    <div class="d-flex align-items-center justify-content-between chatbot-header">
+      <strong class="chatbot-title">AI Chatbot</strong>
+      <button class="btn btn-icon" id="close-chatbot">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <input type="text" id="chat-input" class="form-control mt-2" placeholder="輸入訊息..." />
+  </div>
+
+  <div id="open-chatbot" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center shadow">
+    <i class="fas fa-robot"></i>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="index.js"></script>
+  <script src="processor.js"></script>
+  <script>
+    $("#edit-title-btn").click(function () {
+      var currentTitle = $("#meeting-title").text();
+      var newTitle = prompt("請輸入新的會議標題：", currentTitle);
+
+      if (newTitle !== null && newTitle.trim() !== "") {
+        $("#meeting-title").text(newTitle);
+      }
+    });
+    
+    $('#open-chatbot').click(function () {
+      $('.chatbot').css('right', '0');
+      $('.content').css('width', 'calc(85% - 450px)');
+      $('#open-chatbot').addClass('d-none'); // Hide button after opening chatbot
+    });
+
+    $('#close-chatbot').click(function () {
+      $('.chatbot').css('right', '-450px');
+      $('.content').css('width', '85%');
+      $('#open-chatbot').removeClass('d-none'); // Show button after closing chatbot
+    });
+
+    $('#chat-input').on('keypress', function (event) {
+      if (event.which === 13) {  // Enter key
+        var userInput = $('#chat-input').val();
+        if (userInput) {
+          $('#chat-messages').append(`
+            <div class="message-container user">
+              <div class="message-user">${userInput}</div>
+            </div>
+          `);
+          $('#chat-input').val('');
+          $('#chat-messages').append(`
+            <div class="message-container ai">
+              <div class="message-ai">已經為您找到有關 DDR Ratio 的會議</div>
+            </div>
+          `);
+
+          $('#chat-messages').animate({
+            scrollTop: $('#chat-messages').get(0).scrollHeight
+          }, 1000);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>
