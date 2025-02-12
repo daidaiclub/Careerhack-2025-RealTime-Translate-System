@@ -8,11 +8,16 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech
 from pydub import AudioSegment
 from dotenv import load_dotenv
+<<<<<<< HEAD
 import webrtcvad
 import numpy as np
 import torch
 import wave
 from datetime import datetime
+=======
+import numpy as np
+import torch
+>>>>>>> b855e0a (feat: fix whisper speech transcribe)
 
 # 加載環境變數
 load_dotenv()
@@ -29,6 +34,7 @@ class SpeechRecognizer:
 class WhisperSpeechRecognizer(SpeechRecognizer):
     def __init__(self, model_size="large"):
         self.model = whisper.load_model(model_size)
+        print(f"🔊 Whisper 模型已載入：{model_size}")
 
     def transcribe(self, audio_path: str, callback: Callable[[str], None]):
         """單次轉錄"""
@@ -43,6 +49,7 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
         frame_rate = 16000  # Whisper 預設 16kHz
         sample_width = 2  # 16-bit PCM
 
+<<<<<<< HEAD
         vad = webrtcvad.Vad()
         vad.set_mode(2)  # 模式 3：較嚴格的語音偵測
 
@@ -71,14 +78,18 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
 
             return filepath
 
+=======
+        tmp_audio = b""
+>>>>>>> b855e0a (feat: fix whisper speech transcribe)
         while True:
             try:
-                audio = audio_queue.get(timeout=3)  # 嘗試從 queue 讀取音訊
+                audio = audio_queue.get(timeout=3)
                 if not audio:
                     break
                 tmp_audio += audio
                 # print(f"Received {len(audio)} bytes")
             except queue.Empty:
+<<<<<<< HEAD
                 break  # 若 queue 為空，則結束讀取
 
             # 將音訊切割為 30ms 幀，過濾靜音
@@ -111,7 +122,18 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
             result = self.model.transcribe(audio_np, fp16=torch.cuda.is_available())
             print(f"[{audio_path}] {result['text']}")
             callback(result["text"])
+=======
+                break
+>>>>>>> b855e0a (feat: fix whisper speech transcribe)
 
+            if len(tmp_audio) < chunk_size * frame_rate * sample_width:
+                continue
+            
+            audio = np.frombuffer(tmp_audio, dtype=np.int16).astype(np.float32) / 32768.0
+            result = self.model.transcribe(audio, fp16=torch.cuda.is_available())
+            text = result["text"].strip()
+            tmp_audio = b""
+            print(text)
         done()  # 通知處理完成
 
 
