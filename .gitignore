@@ -11,3 +11,6 @@ tmp/
 tmp.*
 uploads/
 cloud-sql-proxy
+*grp*.json
+*.ini
+secret.*
