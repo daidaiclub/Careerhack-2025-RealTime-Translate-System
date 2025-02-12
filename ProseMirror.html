@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProseMirror Markdown Editor</title>
+    <link rel="stylesheet" href="https://prosemirror.net/css/editor.css">
+    <style>
+        /* Tooltip 基本樣式 */
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+            white-space: nowrap;
+            z-index: 1000;
+        }
+    </style>
+    <script type="module">
+        import { EditorView } from "https://esm.sh/prosemirror-view";
+        import { EditorState } from "https://esm.sh/prosemirror-state";
+        import { schema, defaultMarkdownParser, defaultMarkdownSerializer } from "https://esm.sh/prosemirror-markdown";
+        import { exampleSetup } from "https://esm.sh/prosemirror-example-setup";
+
+        class MarkdownView {
+            constructor(target, content) {
+                this.textarea = target.appendChild(document.createElement("textarea"));
+                this.textarea.style.width = "100%";
+                this.textarea.style.height = "300px";
+                this.textarea.value = this.highlightTerm(content);
+            }
+
+            get content() { return this.textarea.value; }
+            focus() { this.textarea.focus(); }
+            destroy() { this.textarea.remove(); }
+
+            // 自動將 "馬卡巴卡" 轉換為 ***馬卡巴卡***
+            highlightTerm(text) {
+                return text.replace(/馬卡巴卡/g, "***馬卡巴卡***");
+            }
+        }
+
+        class ProseMirrorView {
+            constructor(target, content) {
+                this.view = new EditorView(target, {
+                    state: EditorState.create({
+                        doc: defaultMarkdownParser.parse(this.highlightTerm(content)),
+                        plugins: exampleSetup({ schema })
+                    })
+                });
+
+                // 處理 Tooltip
+                this.tooltip = document.createElement("div");
+                this.tooltip.className = "tooltip";
+                document.body.appendChild(this.tooltip);
+
+                this.view.dom.addEventListener("mouseover", (event) => this.handleMouseOver(event));
+                this.view.dom.addEventListener("mouseout", () => this.hideTooltip());
+            }
+
+            get content() {
+                return defaultMarkdownSerializer.serialize(this.view.state.doc);
+            }
+
+            focus() { this.view.focus(); }
+            destroy() { this.view.destroy(); this.tooltip.remove(); }
+
+            highlightTerm(text) {
+                return text.replace(/馬卡巴卡/g, "****馬卡巴卡****");
+            }
+
+            handleMouseOver(event) {
+                if (event.target.nodeType === 3) return; // 跳過純文字節點
+                const text = event.target.innerText;
+                if (text.includes("馬卡巴卡")) {
+                    this.showTooltip(event, "馬卡巴卡是一個神秘角色！");
+                }
+            }
+
+            showTooltip(event, message) {
+                this.tooltip.innerText = message;
+                this.tooltip.style.left = event.pageX + "px";
+                this.tooltip.style.top = (event.pageY + 20) + "px";
+                this.tooltip.style.display = "block";
+            }
+
+            hideTooltip() {
+                this.tooltip.style.display = "none";
+            }
+        }
+
+        let place = document.querySelector("#editor");
+        let view = new MarkdownView(place, "# Hello, Markdown Editor!\n\n這是一個測試，馬卡巴卡 是 ProseMirror Markdown 的高亮示範。");
+
+        document.querySelectorAll("input[type=radio]").forEach(button => {
+            button.addEventListener("change", () => {
+                if (!button.checked) return;
+                let View = button.value === "markdown" ? MarkdownView : ProseMirrorView;
+                if (view instanceof View) return;
+                let content = view.content;
+                view.destroy();
+                view = new View(place, content);
+                view.focus();
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <h1>ProseMirror Markdown Editor</h1>
+    <label><input type="radio" name="mode" value="markdown" checked> Markdown</label>
+    <label><input type="radio" name="mode" value="prosemirror"> ProseMirror</label>
+    <div id="editor"></div>
+</body>
+
+</html>
