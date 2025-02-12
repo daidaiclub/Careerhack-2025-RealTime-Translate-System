@@ -105,11 +105,11 @@ class SpeechRecognizer:
         )
         yield config_request
 
-        tmp_audio = b""
         if audio_chunks:
             for chunk in audio_chunks:
                 yield cloud_speech.StreamingRecognizeRequest(audio=chunk.raw_data)
         elif audio_queue:
+            tmp_audio = b""
             while True:
                 try:
                     audio = audio_queue.get(timeout=3)
@@ -120,13 +120,13 @@ class SpeechRecognizer:
                 except queue.Empty:
                     break
 
-        audio = AudioSegment(
-            data=tmp_audio,
-            sample_width=2,  # 16-bit PCM
-            frame_rate=16000,
-            channels=1
-        )
-        audio.export("tmp.wav", format="wav", codec="pcm_s16le")
+            audio = AudioSegment(
+                data=tmp_audio,
+                sample_width=2,  # 16-bit PCM
+                frame_rate=16000,
+                channels=1
+            )
+            audio.export("tmp.wav", format="wav", codec="pcm_s16le")
 
 
     def transcribe(self, audio_path: str, callback=Callable[[str], None]):
@@ -144,7 +144,7 @@ class SpeechRecognizer:
                 text = alt.alternatives[0].transcript
                 callback(text)
 
-    def transcribe_blob(
+    def transcribe_streaming(
         self, audio_queue: queue.Queue, callback: Callable[[str], None], done: Callable[[], None]
     ):
         """處理麥克風錄音 Blob"""

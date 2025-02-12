@@ -90,6 +90,8 @@ def handle_audio_stream(data):
     try:
 
         def callback(text):
+            text = translation_service.translate(text)
+            text = matcher.process_multilingual_text(text)
             socketio.emit("transcript_stream", text)
 
         def done():
@@ -103,7 +105,7 @@ def handle_audio_stream(data):
                     except queue.Empty:
                         break
                 app.audio_task = socketio.start_background_task(
-                    recognizer.transcribe_blob, audio_queue, callback, done
+                    recognizer.transcribe_streaming, audio_queue, callback, done
                 )
         audio_queue.put(data)
     except Exception as e:
