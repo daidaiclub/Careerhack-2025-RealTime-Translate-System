@@ -1,122 +1,41 @@
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+"""Flask application entry point with Socket.IO support."""
+
 import os
-import queue
-import threading
-from werkzeug.utils import secure_filename
-from realtime_translate_system.speech_recongizer import WhisperSpeechRecognizer
-from realtime_translate_system.translate import TranslationService
-from realtime_translate_system.term_matcher import TermMatcher
-from realtime_translate_system.detect import Record
-
-app = Flask(__name__)
-CORS(app)  # 允許跨域請求
-socketio = SocketIO(app, cors_allowed_origins="*")  # WebSocket 支援
-recognizer = WhisperSpeechRecognizer()
-translation_service = TranslationService()
-audio_queue = queue.Queue()
-thread_lock = threading.Lock()
-file_paths = {
-    "Traditional Chinese": "./realtime_translate_system/glossaries/cmn-Hant-TW.csv",
-    "English": "./realtime_translate_system/glossaries/en-US.csv",
-    "German": "./realtime_translate_system/glossaries/de-DE.csv",
-    "Japanese": "./realtime_translate_system/glossaries/ja-JP.csv"
-}
-matcher = TermMatcher(file_paths)
-
-UPLOAD_FOLDER = "uploads"
-ALLOWED_EXTENSIONS = {"wav"}
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+from flask import Flask
+from flask_cors import CORS
+from realtime_translate_system.blueprints import init_blueprints
+from realtime_translate_system.config import config
+from realtime_translate_system.container import Container
+from realtime_translate_system.extensions import socketio
+from realtime_translate_system.models import db
+from realtime_translate_system.sockets import register_sockets
 
 
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+def create_app() -> Flask:
+    """Create and configure the Flask application."""
+    app = Flask(__name__, static_folder="static")
+    CORS(app)  # Allow cross-origin requests
 
+    env = os.environ.get("FLASK_ENV", "development")
+    app.config.from_object(config[env])
 
-@app.route("/")
-def index():
-    return send_from_directory("static", "index.html")
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+    container = Container()
+    container.config.from_dict(app.config)
+    app.container = container
 
-@app.route("/<path:filename>")
-def static_files(filename):
-    return send_from_directory("static", filename)
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+    init_blueprints(app)
+    register_sockets(
+        app, container.recognizer, container.translation_service, container.term_matcher
+    )
 
-
-@app.route("/upload", methods=["POST"])
-def upload_file():
-    if "file" not in request.files:
-        return jsonify({"error": "沒有上傳文件"}), 400
-
-    file = request.files["file"]
-
-    if file.filename == "":
-        return jsonify({"error": "沒有選擇文件"}), 400
-
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-        file.save(filepath)
-
-        socketio.start_background_task(process_audio, filename)
-
-        return jsonify({"message": "文件上傳成功", "filename": filename})
-
-    return jsonify({"error": "不允許的文件類型"}), 400
-
-
-def process_audio(filename):
-    filename = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-
-    def callback(text):
-        text = translation_service.translate(text)
-        text = matcher.process_multilingual_text(text)
-        socketio.emit("transcript", text)
-
-    recognizer.transcribe(filename, callback)
-    socketio.emit("complete")
-
-
-@socketio.on("audio_stream")
-def handle_audio_stream(data):
-    """
-    處理 WebSocket 傳入的音頻流 (WebM Blob)，並即時轉錄
-    """
-    global start
-    try:
-
-        def callback(text):
-            if text != "":
-                text = translation_service.translate(text)
-                text = matcher.process_multilingual_text(text)
-                socketio.emit("transcript_stream", text)
-
-        def done():
-            app.audio_task = None
-
-        with thread_lock:
-            if not hasattr(app, "audio_task") or app.audio_task is None:
-                while True:
-                    try:
-                        audio_queue.get_nowait()
-                    except queue.Empty:
-                        break
-                app.audio_task = socketio.start_background_task(
-                    recognizer.transcribe_streaming, audio_queue, callback, done
-                )
-        audio_queue.put(data)
-    except Exception as e:
-        print(f"❌ Error processing audio stream: {e}")
-
-@socketio.on("start_record")
-def start_server():
-    Record()
+    return app
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host="0.0.0.0", port=5000)
+    APP = create_app()
+    socketio.run(APP, debug=True, host="0.0.0.0", port=5000)

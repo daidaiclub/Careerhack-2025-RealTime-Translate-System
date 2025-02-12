@@ -1,8 +1,9 @@
-import pandas as pd
 import jieba
 import MeCab
+import pandas as pd
 import re
 from fuzzywuzzy import fuzz
+
 
 class TermMatcher:
     def __init__(self, file_paths: dict, threshold: int = 60):
@@ -14,7 +15,7 @@ class TermMatcher:
         self.threshold = threshold
         self.term_dicts = {}  # 存放不同語言的術語字典
         self.mecab = MeCab.Tagger("-Owakati")
-        
+
         # 讀取每個語言的企業術語
         for lang, path in file_paths.items():
             self.term_dicts[lang] = self._load_glossaries(path)
@@ -30,7 +31,9 @@ class TermMatcher:
         """讀取 CSV 並建立企業術語字典"""
         glossaries = pd.read_csv(file_path)
         glossaries.columns = glossaries.columns.str.strip()
-        return {row["Proper Noun"]: row["Description"] for _, row in glossaries.iterrows()}
+        return {
+            row["Proper Noun"]: row["Description"] for _, row in glossaries.iterrows()
+        }
 
     def _add_terms_to_jieba(self, term_dict: dict) -> None:
         """將企業術語加入 jieba 詞庫，確保長詞優先匹配"""
@@ -40,7 +43,7 @@ class TermMatcher:
 
     def _tokenize_text(self, input_text: str, lang: str) -> list:
         """根據語言選擇適當的分詞方式"""
-        cleaned_text = re.sub(r'\s+', ' ', input_text).strip()
+        cleaned_text = re.sub(r"\s+", " ", input_text).strip()
 
         if lang == "Traditional Chinese":
             tokens = list(jieba.cut(cleaned_text))
@@ -82,7 +85,10 @@ class TermMatcher:
             if i < len(tokens) - 1:
                 token1, token2 = tokens[i], tokens[i + 1]
                 if token1 in similarity_scores and token2 in similarity_scores:
-                    if similarity_scores[token1] >= self.threshold and similarity_scores[token2] >= self.threshold:
+                    if (
+                        similarity_scores[token1] >= self.threshold
+                        and similarity_scores[token2] >= self.threshold
+                    ):
                         merged_tokens.append(token1 + " " + token2)
                         i += 2
                         continue
@@ -111,7 +117,9 @@ class TermMatcher:
         將匹配到的專有名詞替換為 原詞[定義] 的格式，避免重複替換已標記的內容。
         僅在不在中括號(...)的區域裡才會做替換，防止重複或嵌套注釋。
         """
-        final_matched_sorted = sorted(final_matched, key=lambda x: len(x[0]), reverse=True)
+        final_matched_sorted = sorted(
+            final_matched, key=lambda x: len(x[0]), reverse=True
+        )
 
         token_map = {}
         for token, term, score, desc in final_matched_sorted:
@@ -126,12 +134,12 @@ class TermMatcher:
         while i < n:
             ch = input_text[i]
 
-            if ch == '[':
+            if ch == "[":
                 # 一旦遇到 '['，表示進入中括號，直接將字元加入結果
                 inside_brackets = True
                 annotated_text.append(ch)
                 i += 1
-            elif ch == ']':
+            elif ch == "]":
                 # 一旦遇到 ']'，表示離開中括號，直接將字元加入結果
                 inside_brackets = False
                 annotated_text.append(ch)
@@ -141,8 +149,11 @@ class TermMatcher:
                     matched = False
                     for tk, desc in token_map.items():
                         token_len = len(tk)
-                        if i + token_len <= n and input_text[i:i+token_len].lower() == tk:
-                            original_str = input_text[i:i+token_len]
+                        if (
+                            i + token_len <= n
+                            and input_text[i : i + token_len].lower() == tk
+                        ):
+                            original_str = input_text[i : i + token_len]
                             annotated_text.append(f"{original_str}[{desc}]")
                             i += token_len
                             matched = True
@@ -170,17 +181,17 @@ class TermMatcher:
 
         term_dict = self.term_dicts[lang]
         tokens = self._tokenize_text(input_text, lang)
-        matched_terms, similarity_scores = self._match_terms(tokens, term_dict)
+        _, similarity_scores = self._match_terms(tokens, term_dict)
         merged_tokens = self._merge_adjacent_tokens(tokens, similarity_scores)
         final_matched = self._final_matching(merged_tokens, term_dict)
         annotated_text = self.annotate_text(input_text, final_matched)
 
         return merged_tokens, final_matched, annotated_text
-    
+
     def process_multilingual_text(self, text_dict: dict):
         """
         處理多語言文本，依照不同語言使用對應的企業術語。
-        
+
         :param text_dict: {"語言": "對應的文本"}
         :return: 相同結構的字典，但內容已加入企業術語註釋
         """
@@ -192,20 +203,19 @@ class TermMatcher:
                 output_dict[lang] = text  # 未知語言則不做處理
         return output_dict
 
+
 if __name__ == "__main__":
-    file_paths = {
-        "Traditional Chinese": "../../dataset/cmn-Hant-TW.csv",
-        "English": "../../dataset/en-US.csv",
-        "German": "../../dataset/de-DE.csv",
-        "Japanese": "../../dataset/ja-JP.csv"
-    }
-    matcher = TermMatcher(file_paths)
+    from config import Config
+
+    matcher = TermMatcher(Config.FILE_PATHS)
 
     input_text = """
     大家好，今天要討論的是關於DDR Ratio的問題，在 DP上發現這週的ratio很高，請問MARTIN是否知道發生原因 ?
     """
 
-    merged_tokens, final_matched, annotated_text = matcher.process_text(input_text, "Traditional Chinese")
+    merged_tokens, final_matched, annotated_text = matcher.process_text(
+        input_text, "Traditional Chinese"
+    )
     print("分詞結果：", merged_tokens)
     print("\n最終偵測到的專有名詞：")
     for token, term, score, description in final_matched:
@@ -219,7 +229,7 @@ if __name__ == "__main__":
         "Traditional Chinese": "大家好，今天要討論的是關於DDR Ratio的問題。",
         "English": "Hello, let's discuss the DDR Ratio issue.",
         "German": "Hallo, wir sollten das DDR Ratio Problem besprechen.",
-        "Japanese": "こんにちは、DDR Ratioの問題について話し合いましょう。"
+        "Japanese": "こんにちは、DDR Ratioの問題について話し合いましょう。",
     }
 
     annotated_result = matcher.process_multilingual_text(text_to_annotate)

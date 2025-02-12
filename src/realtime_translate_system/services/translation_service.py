@@ -1,18 +1,17 @@
-import os
-import time
-from dotenv import load_dotenv
 import re
-
+import time
 import vertexai
 from vertexai.generative_models import GenerativeModel
 import vertexai.preview.generative_models as generative_models
 
 
 class TranslationService:
-    def __init__(self):
-        load_dotenv()
-        self.project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        self.location = "us-central1"
+    def __init__(self, location: str = "us-central1", project_id: str = None):
+        self.location = location
+        self.project_id = project_id
+
+        if not self.project_id:
+            raise ValueError("Project ID is required for Vertex AI")
 
         vertexai.init(project=self.project_id, location=self.location)
 
@@ -34,7 +33,6 @@ class TranslationService:
         # 指定要用的模型
         self.model = GenerativeModel("gemini-1.5-flash-002")
 
-
     def _clean_translation_output(self, response: str):
         """
         解析並整理 Gemini Chat 的翻譯輸出，確保格式一致。
@@ -43,14 +41,16 @@ class TranslationService:
             "Traditional Chinese": "",
             "English": "",
             "German": "",
-            "Japanese": ""
+            "Japanese": "",
         }
 
         # 解析每一行的語言與對應翻譯
         lines = response.strip().split("\n")
         correct_lang_count = 0
         for line in lines:
-            match = re.match(r"- (Traditional Chinese|English|German|Japanese):\s*(.+)", line)
+            match = re.match(
+                r"- (Traditional Chinese|English|German|Japanese):\s*(.+)", line
+            )
             if match:
                 lang = match.group(1)
                 text = match.group(2).strip()
@@ -60,7 +60,7 @@ class TranslationService:
 
         result = {
             "status": "success" if correct_lang_count == 4 else "error",
-            "values": translations
+            "values": translations,
         }
 
         return result
@@ -95,9 +95,7 @@ class TranslationService:
     """
 
         responses = self.model.generate_content(
-            [
-                prompt, content
-            ],
+            [prompt, content],
             generation_config=self.generation_config,
             safety_settings=self.safety_settings,
         )
@@ -111,8 +109,8 @@ class TranslationService:
                     "Traditional Chinese": content,
                     "English": content,
                     "German": content,
-                    "Japanese": content
-                }
+                    "Japanese": content,
+                },
             }
 
         return translated_text.get("values", {})
@@ -146,9 +144,12 @@ if __name__ == "__main__":
 
     text_list = transcripts.split("\n")
 
-    service = TranslationService()
+    from realtime_translate_system.config import Config
+
+    service = TranslationService(location=Config.LOCATION, project_id=Config.PROJECT_ID)
     total_time = 0
     import json
+
     for text in text_list:
         if not text.strip():
             continue
