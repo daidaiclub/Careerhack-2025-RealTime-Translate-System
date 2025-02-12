@@ -133,3 +133,23 @@ gcloud auth application-default login
 
 2. Set the environment variable
    Add the environment variable `C:\Program Files\[ffmpeg-name]\bin`
+
+### K8s Deployment
+
+```bash
+kubectl apply -f namespace.yaml
+base64 -w 0 grp-secret.json > grp-secret.json.base64
+kubectl create secret generic grp-secret --from-file=grp-secret.json=grp-secret.json.base64 -n careerhack
+kubectl apply -d k8s.yaml
+
+# Set the SSL Certificate
+sudo certbot certonly \                        
+  --dns-cloudflare \
+  --dns-cloudflare-credentials ~/.secrets/cloudflare.ini -d example.com
+
+# Apply the SSL Certificate
+kubectl create secret tls careerhack-tls \
+  --cert=/etc/letsencrypt/live/example.com/fullchain.pem \
+  --key=/etc/letsencrypt/live/example.com/privkey.pem \
+  --namespace careerhack
+```
