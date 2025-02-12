@@ -27,8 +27,8 @@
         <div class="d-flex justify-content-between mb-3">
           <div class="d-flex align-items-center">
             <h3 id="meeting-title" class="mb-0">新會議</h3>
-            <button class="btn btn-icon p-0 m-0" id="edit-title-btn" data-bs-toggle="tooltip" data-bs-placement="top"
-              title="編輯標題">
+            <input id="meeting-title-input" class="form-control d-none" type="text" />
+            <button id="edit-title-btn" class="btn btn-icon p-0 m-0">
               <i class="fas fa-edit"></i>
             </button>
           </div>
@@ -86,15 +86,28 @@
   <script src="index.js"></script>
   <script src="processor.js"></script>
   <script>
-    $("#edit-title-btn").click(function () {
-      var currentTitle = $("#meeting-title").text();
-      var newTitle = prompt("請輸入新的會議標題：", currentTitle);
+    $('#edit-title-btn').click(() => {
+      const currentTitle = $('#meeting-title').text();
+      $('#meeting-title-input')
+        .val(currentTitle)
+        .removeClass('d-none');
+      $('#meeting-title').addClass('d-none');
+      $('#edit-title-btn').addClass('d-none');
+      $('#meeting-title-input').focus();
+    });
 
-      if (newTitle !== null && newTitle.trim() !== "") {
-        $("#meeting-title").text(newTitle);
+    $('#meeting-title-input').on('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const newTitle = $('#meeting-title-input').val()?.toString().trim() || '';
+        if (newTitle) {
+          $('#meeting-title').text(newTitle);
+        }
+        $('#meeting-title-input').addClass('d-none');
+        $('#meeting-title').removeClass('d-none');
+        $('#edit-title-btn').removeClass('d-none');
       }
     });
-    
+
     $('#open-chatbot').click(function () {
       $('.chatbot').css('right', '0');
       $('.content').css('width', 'calc(85% - 450px)');
