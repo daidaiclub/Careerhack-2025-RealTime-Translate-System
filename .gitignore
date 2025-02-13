@@ -15,3 +15,5 @@ cloud-sql-proxy
 *.ini
 secret.*
 *.db
+
+venv
