@@ -3,7 +3,7 @@ import { DocAPI } from "./api/document-api.js";
 import { toggleTitleEdit as uiToggleTitleEdit, showGlobalAlert } from "./ui.js";
 import { getDocIdFromURL } from "./utils.js";
 import { debounce } from "./debounce.js";
-import { transcriptState, currentLanguage, setCurrentLanguage } from "./transcriptState.js";
+import { transcriptState, currentLanguage, setCurrentLanguage, state } from "./transcriptState.js";
 import { renderTranscripts } from "./renderTranscripts.js";
 
 // DOM 參考
@@ -12,12 +12,6 @@ const dom = {
   $meetingTitleInput: $("#meeting-title-input"),
   $transcriptArea: $("#transcript_area"),
   $docList: $("#doc-list")
-};
-
-const state = {
-  docId: null,
-  isSaving: false,
-  currentTitle: "新會議"
 };
 
 /**

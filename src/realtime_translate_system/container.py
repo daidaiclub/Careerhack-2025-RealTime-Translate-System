@@ -42,10 +42,10 @@ class Container(containers.DeclarativeContainer):
     # llm_service = providers.Singleton(LLMService, model_name="gemini-1.5-pro-002")
     # embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")
     
-    database_service = providers.Singleton(
-        DatabaseService,
-        embedding_service=embedding_service
-    )
+    # database_service = providers.Singleton(
+    #     DatabaseService,
+    #     embedding_service=embedding_service
+    # )
     # # TODO
     # database_service = None
     
