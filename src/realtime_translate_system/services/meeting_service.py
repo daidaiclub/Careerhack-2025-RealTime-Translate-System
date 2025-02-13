@@ -59,19 +59,14 @@ class RetrievalAugmentedGeneration:
     def hybrid_search(self, user_query: str):
         keyword_threshold = 80
         
-        parsed_query = self.parse_user_query(user_query)
-        search_date = parsed_query["date"]
-        search_keywords = parsed_query["keywords"]
+        search_date, search_keywords = self.parse_user_query(user_query)
         print(f'轉化後使用者的查詢:\ndate: {search_date},  keywords: {search_keywords}')
 
-        results = DatabaseService.get_meetings()
-        filtered_meetings = []
-        for metadata, document in zip(results["metadatas"], results["documents"]):
-            metadata["keywords"] = json.loads(metadata["keywords"])
-            if search_date and metadata["date"] != search_date:
-                continue
-            metadata["transcript"] = document
-            filtered_meetings.append(metadata)
+        results = self.db_service.get_meetings()
+
+        filtered_meetings = [
+            doc for doc in results if not search_date or doc.created_at.date() == search_date
+        ]
         
         if search_keywords:
             filtered_meetings = [
@@ -84,13 +79,7 @@ class RetrievalAugmentedGeneration:
         query_embedding = self.embedding_service.get_embedding(search_keywords)
         results = self.db_service.search_meetings(query_embedding)
 
-        unique_meetings = []
-        for metadata, document in zip(results["metadatas"][0], results["documents"][0]):
-            metadata["keywords"] = json.loads(metadata["keywords"]) if "keywords" in metadata else []
-            metadata["transcript"] = document
-            unique_meetings.append(metadata)
-
-        return unique_meetings
+        return results
 
 
 class MeetingProcessor:
@@ -173,7 +162,3 @@ class MeetingProcessor:
         response = self.llm_service.query(prompt)
         
         return response.text
-
-    def store_meeting_record():
-        # TODO
-        pass
