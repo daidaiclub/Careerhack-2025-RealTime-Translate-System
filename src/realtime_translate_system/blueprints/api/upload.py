@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, current_app as app
 from werkzeug.utils import secure_filename
 
-record_bp = Blueprint("record", __name__)
+upload_bp = Blueprint("upload", __name__)
 
 
 def allowed_file(filename):
@@ -12,7 +12,7 @@ def allowed_file(filename):
     )
 
 
-@record_bp.route("/upload", methods=["POST"])
+@upload_bp.route("/", methods=["POST"])
 def upload_file():
     if "file" not in request.files:
         return jsonify({"error": "沒有上傳文件"}), 400

@@ -37,19 +37,21 @@ class Container(containers.DeclarativeContainer):
         term_matcher=term_matcher,
     )
     
-    vertexai.init(project=config.PROJECT_ID, location=config.LOCATION)
+    # vertexai.init(project=config.PROJECT_ID, location=config.LOCATION)
 
-    llm_service = providers.Singleton(LLMService, model_name="gemini-1.5-pro-002")
-    embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")
+    # llm_service = providers.Singleton(LLMService, model_name="gemini-1.5-pro-002")
+    # embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")
     
     database_service = providers.Singleton(
         DatabaseService,
         embedding_service=embedding_service
     )
+    # # TODO
+    # database_service = None
     
-    meeting_processor = providers.Singleton(
-        MeetingProcessor,
-        llm_service=llm_service,
-        db_service=database_service,
-        embedding_service=embedding_service
-    )
+    # meeting_processor = providers.Singleton(
+    #     MeetingProcessor,
+    #     llm_service=llm_service,
+    #     db_service=database_service,
+    #     embedding_service=embedding_service
+    # )

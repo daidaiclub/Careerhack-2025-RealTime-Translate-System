@@ -101,6 +101,7 @@ class GoogleSpeechRecognizer(SpeechRecognizer):
         yield config_request
 
         if audio_chunks:
+            print(f"🎵 Streaming {len(audio_chunks)} audio chunks")
             for chunk in audio_chunks:
                 yield cloud_speech.StreamingRecognizeRequest(audio=chunk.raw_data)
         elif audio_queue:
@@ -111,7 +112,6 @@ class GoogleSpeechRecognizer(SpeechRecognizer):
                     if not audio:
                         break
                     tmp_audio += audio
-                    print(f"Received audio chunk: {len(audio)} bytes")
                     yield cloud_speech.StreamingRecognizeRequest(audio=audio)
                 except queue.Empty:
                     break

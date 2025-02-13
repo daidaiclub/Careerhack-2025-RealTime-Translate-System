@@ -4,18 +4,19 @@ from .speech_recongizer import SpeechRecognizer
 from .translation_service import TranslationService
 from .term_matcher import TermMatcher
 
+
 class AudioService:
     def __init__(
         self,
         upload_folder,
-        recognizer: SpeechRecognizer,
-        translation_service: TranslationService,
-        term_matcher: TermMatcher,
+        recognizer,
+        translation_service,
+        term_matcher,
     ):
         self.upload_folder = upload_folder
-        self.recognizer = recognizer
-        self.translation_service = translation_service
-        self.term_matcher = term_matcher
+        self.recognizer: SpeechRecognizer = recognizer
+        self.translation_service: TranslationService = translation_service
+        self.term_matcher: TermMatcher = term_matcher
 
     def process_audio(self, filename):
         filepath = os.path.join(self.upload_folder, filename)
@@ -24,9 +25,9 @@ class AudioService:
             if text.strip() == "":
                 return
             text = self.translation_service.translate(text)
-            text = self.term_matcher.process_multilingual_text(text)
-            data = {"status": "continue", "text": text}
-            socketio.emit("transcript", data)
+            multilingual_text = self.term_matcher.process_multilingual_text(text)
+            data = {"status": "continue", "text": multilingual_text}
+            socketio.emit("transcript", data, namespace="/audio_stream")
 
         self.recognizer.transcribe(filepath, callback)
-        socketio.emit("transcript", {"status": "complete"})
+        socketio.emit("transcript", {"status": "complete"}, namespace="/audio_stream")
