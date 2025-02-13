@@ -4,3 +4,5 @@ from realtime_translate_system.services.speech.google import GoogleSpeechRecogni
 from realtime_translate_system.services.speech.whisper import WhisperSpeechRecognizer
 from realtime_translate_system.services.translation_service import TranslationService
 from realtime_translate_system.services.term_matcher import TermMatcher
+from realtime_translate_system.services.ai_service import LLMService, EmbeddingService
+from realtime_translate_system.services.meeting_service import MeetingProcessor

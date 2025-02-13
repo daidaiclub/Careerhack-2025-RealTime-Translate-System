@@ -5,8 +5,10 @@ from realtime_translate_system.services import (
     GoogleSpeechRecognizer,
     TranslationService,
     TermMatcher,
+    LLMService, EmbeddingService,
+    MeetingProcessor
 )
-
+import vertexai
 
 class Container(containers.DeclarativeContainer):
     """依賴注入容器，管理 Flask 內的服務"""
@@ -32,4 +34,19 @@ class Container(containers.DeclarativeContainer):
         recognizer=recognizer,
         translation_service=translation_service,
         term_matcher=term_matcher,
+    )
+    
+    vertexai.init(project=config.PROJECT_ID, location=config.LOCATION)
+
+    llm_service = providers.Singleton(LLMService, model_name="gemini-1.5-pro-002")
+    embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")
+    
+    # TODO
+    database_service = None
+    
+    meeting_processor = providers.Singleton(
+        MeetingProcessor,
+        llm_service=llm_service,
+        db_service=database_service,
+        embedding_service=embedding_service
     )
