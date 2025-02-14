@@ -1,11 +1,14 @@
-import { audioSocket } from "./socket.js";
-import { toggleMicButton as uiToggleMicButton, showGlobalAlert } from "./ui.js";
+document.addEventListener("DOMContentLoaded", function () {
+    $('#mic-btn').click(function () {
+        toggleMicButton();
+    });
+});
 
 // 內部狀態：錄音相關
 let audioContext = null;
 let mediaStream = null;
 let workletNode = null;
-
+const audioSocket = io("127.0.0.1:5000/audio_stream", { path: "/socket.io" });
 /**
  * 開始錄音：
  * 1. 建立 AudioContext（設定採樣率 16000）
@@ -85,10 +88,20 @@ function stopRecording() {
   uiToggleMicButton();
 }
 
-export function triggerMicButton() {
+function triggerMicButton() {
   if (!audioContext) {
     startRecording();
   } else {
     stopRecording();
+  }
+}
+
+function toggleMicButton() {
+  const $icon = $("#mic-btn i");
+
+  if ($icon.hasClass("fa-microphone")) {
+    $icon.removeClass().addClass("fa-solid fa-circle text-danger");
+  } else {
+    $icon.removeClass().addClass("fa-solid fa-microphone");
   }
 }
