@@ -26,7 +26,7 @@ def create_app() -> Flask:
     container.config.from_dict(app.config)
     app.container = container
 
-    vertexai.init(project=container.config.PROJECT_ID, location=container.config.LOCATION)
+    vertexai.init(project=container.config.PROJECT_ID(), location=container.config.LOCATION())
 
     db.init_app(app)
     with app.app_context():
