@@ -1,9 +1,9 @@
-import json
+import numpy as np
 from datetime import datetime, timedelta
 from fuzzywuzzy import fuzz
 from realtime_translate_system.services.database_service import DatabaseService
 from realtime_translate_system.services.ai_service import LLMService, EmbeddingService
-
+from numpy.linalg import norm
 
 class RetrievalAugmentedGeneration:
     """負責從向量資料庫檢索資訊並產生 RAG Prompt""" 
@@ -144,15 +144,39 @@ class MeetingProcessor:
         keywords = parsed_response.get("keywords", [])
         
         return title, keywords
+    
+    def _is_retrieval_query(self, user_query):
+        """
+        判斷使用者的查詢是要「找出會議」還是「總結會議」。
+        """
+
+        # 定義「找出會議」與「總結會議」的代表性描述
+        retrieval_task = "搜尋找出包含關鍵字的歷史會議記錄"
+        summarization_task = "針對會議內容撰寫摘要，整理核心重點與決策"
+
+        # 取得嵌入向量
+        embedding_retrieval = np.array(self.embedding_service.get_embedding(retrieval_task))
+        embedding_summarization = np.array(self.embedding_service.get_embedding(summarization_task))
+        embedding_query = np.array(self.embedding_service.get_embedding(user_query))
+
+        # 計算餘弦相似度
+        similarity_retrieval = np.dot(embedding_retrieval, embedding_query) / (norm(embedding_retrieval) * norm(embedding_query))
+        similarity_summarization = np.dot(embedding_query, embedding_summarization) / (norm(embedding_query) * norm(embedding_summarization))
+
+        # 判斷查詢類型
+        if similarity_retrieval > similarity_summarization:
+            return True  # 偏向「找出會議」
+        else:
+            return False  # 偏向「總結會議」
 
     def gen_meeting_summarize(self, user_query: str):
         """根據查詢出的會議資訊，生成 RAG Prompt，讓 LLM 完成使用者的需求"""
 
         retrieved_meetings = self.rag_service.hybrid_search(user_query)
         
-        if '找出' in user_query:
+        if self._is_retrieval_query(user_query):
             return retrieved_meetings
-
+        
         meetings_context = "\n\n".join([
             f"**Meeting Title:** {meeting.title}\n"
             f"**Create Date:** {meeting.created_at}\n"
