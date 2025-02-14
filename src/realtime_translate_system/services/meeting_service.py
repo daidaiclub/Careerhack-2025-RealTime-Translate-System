@@ -83,7 +83,7 @@ class RetrievalAugmentedGeneration:
             return filtered_meetings
         
         query_embedding = self.embedding_service.get_embedding(search_keywords)
-        results = self.db_service.search_meetings(query_embedding)
+        results = self.db_service.search_meetings(query_embedding, top_k=1)
 
         return results
 
