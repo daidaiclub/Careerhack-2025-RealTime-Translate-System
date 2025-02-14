@@ -24,21 +24,7 @@ def get_doeityocs():
 
 @doc_bp.route("/", methods=["GET"])
 def get_docs():
-    docs = Doc.query.all()
-    return jsonify(
-        [
-            {
-                "id": doc.id,
-                "title": doc.title,
-                "transcript_chinese": doc.transcript_chinese,
-                "transcript_english": doc.transcript_english,
-                "transcript_german": doc.transcript_german,
-                "transcript_japanese": doc.transcript_japanese,
-                "updated_at": doc.updated_at.isoformat(),
-            }
-            for doc in docs
-        ]
-    )
+    current_app.container.database_service().get_meetings()
 
 
 @doc_bp.route("/<int:doc_id>", methods=["GET"])

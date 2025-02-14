@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 from realtime_translate_system.services.ai_service import EmbeddingService
 from realtime_translate_system.models.doc import Doc
 from realtime_translate_system.models import db
-from sqlalchemy import text
+from sqlalchemy import text, desc
 from datetime import datetime
 
 # # PostgreSQL 連線設定
@@ -116,10 +116,11 @@ class DatabaseService:
         #     print(f"查詢失敗: {e}")
         #     return []
         try:
-            return Doc.query.all()
+            return Doc.query.order_by(desc(Doc.updated_at)).all()
         except Exception as e:
             print(f"查詢失敗: {e}")
             return []
+
 
     def search_meetings(
         self, query_embedding: List[float], top_k: int = 5
