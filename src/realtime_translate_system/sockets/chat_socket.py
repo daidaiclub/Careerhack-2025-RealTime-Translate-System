@@ -1,6 +1,4 @@
 from flask_socketio import SocketIO, Namespace
-import threading
-import queue
 from realtime_translate_system.services import MeetingProcessor
 
 
