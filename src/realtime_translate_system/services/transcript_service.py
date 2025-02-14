@@ -7,14 +7,14 @@ class TranscriptService:
         self.translation_service = translation_service
         self.term_matcher = term_matcher
 
-        self.previous_translation_text = None
-        self.term_list = self.translation_service.load_term_dict(glossaries_paths=glossary_folder)
+        self.previous_translation = None
+        self.term_dict = self.translation_service.load_term_dict(glossaries_paths=glossary_folder)
 
     def process(self, text):
         if text.strip() == "":
             return None
 
-        text = self.translation_service.translate(text, previous_translation_text=self.previous_translation_text, term_list=self.term_list)
+        text = self.translation_service.translate(text, previous_translation=self.previous_translation, term_dict=self.term_dict)
 
         multilingual_text = self.term_matcher.process_multilingual_text(text)
         data = {"status": "continue", "text": multilingual_text}

@@ -1,9 +1,25 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime
 from realtime_translate_system.models import db
 from realtime_translate_system.models.doc import Doc
 
 doc_bp = Blueprint("doc", __name__)
+
+
+@doc_bp.route("/test", methods=["GET"])
+def get_doeityocs():
+    print("🔹 測試插入會議記錄...")
+    current_app.container.database_service().insert_meeting(
+        title="AI 發展趨勢",
+        transcript_chinese="人工智能正在快速發展，對各行各業產生深遠影響。",
+        transcript_english="Artificial intelligence is rapidly evolving and has a profound impact on various industries.",
+        transcript_german="Künstliche Intelligenz entwickelt sich rasant und hat tiefgreifende Auswirkungen auf verschiedene Branchen.",
+        transcript_japanese="人工知能は急速に進化しており、さまざまな業界に深い影響を与えています。",
+        keywords=["AI", "Machine Learning", "科技"],
+    )
+    print("🔹 測試插入會議記錄完成")
+
+    return jsonify({"status": "ok"})
 
 
 @doc_bp.route("/", methods=["GET"])

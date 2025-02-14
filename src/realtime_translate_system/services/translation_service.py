@@ -1,6 +1,7 @@
 import pandas as pd
 import time
 from vertexai.generative_models import GenerativeModel
+from realtime_translate_system.config import Language
 from realtime_translate_system.services.ai_service import LLMService
 
 
@@ -39,22 +40,22 @@ class TranslationService:
                     else "None"
                 ),
                 zh=(
-                    previous_translation.get("zh", "None")
+                    previous_translation.get(Language.TW, "None")
                     if previous_translation
                     else "None"
                 ),
                 en=(
-                    previous_translation.get("en", "None")
+                    previous_translation.get(Language.EN, "None")
                     if previous_translation
                     else "None"
                 ),
                 de=(
-                    previous_translation.get("de", "None")
+                    previous_translation.get(Language.DE, "None")
                     if previous_translation
                     else "None"
                 ),
                 jp=(
-                    previous_translation.get("jp", "None")
+                    previous_translation.get(Language.JP, "None")
                     if previous_translation
                     else "None"
                 ),
@@ -97,10 +98,10 @@ class TranslationService:
         
         ```json
         {{
-            "zh": "<translated Traditional Chinese text>",
-            "en": "<translated English text>",
-            "de": "<translated German text>",
-            "jp": "<translated Japanese text>"
+            Language.TW: "<translated Traditional Chinese text>",
+            Language.EN: "<translated English text>",
+            Language.DE: "<translated German text>",
+            Language.JP: "<translated Japanese text>"
         }}
         ```
         
@@ -110,10 +111,10 @@ class TranslationService:
         Output: 
         ```json
         {{
-            "zh": "這是一個測試。",
-            "en": "This is a test.",
-            "de": "Das ist ein Test.",
-            "jp": "これはテストです。"
+            Language.TW: "這是一個測試。",
+            Language.EN: "This is a test.",
+            Language.DE: "Das ist ein Test.",
+            Language.JP: "これはテストです。"
         }}
         ```
         
@@ -122,10 +123,10 @@ class TranslationService:
         Output: 
         ```json
         {{
-            "zh": "昨天我們有一場重要的關於人工智慧技術的會議。",
-            "en": "Yesterday we had an important meeting about AI technologies.",
-            "de": "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
-            "jp": "昨日、私たちはAI技術に関する重要な会議を行いました。"
+            Language.TW: "昨天我們有一場重要的關於人工智慧技術的會議。",
+            Language.EN: "Yesterday we had an important meeting about AI technologies.",
+            Language.DE: "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
+            Language.JP: "昨日、私たちはAI技術に関する重要な会議を行いました。"
         }}
         ```
 
@@ -140,10 +141,10 @@ class TranslationService:
 
         return {
             "previous_sentence": content.strip(),
-            "zh": parsed_response.get("zh", "None"),
-            "en": parsed_response.get("en", "None"),
-            "de": parsed_response.get("de", "None"),
-            "jp": parsed_response.get("jp", "None"),
+            Language.TW: parsed_response.get(Language.TW, "None"),
+            Language.EN: parsed_response.get(Language.EN, "None"),
+            Language.DE: parsed_response.get(Language.DE, "None"),
+            Language.JP: parsed_response.get(Language.JP, "None"),
         }
 
     def load_term_dict(self, glossaries_path="", glossaries_paths=[]) -> str:
@@ -152,23 +153,23 @@ class TranslationService:
         """
         paths = (
             {
-                "zh": glossaries_path + "/cmn-Hant-TW.csv",
-                "de": glossaries_path + "/de-DE.csv",
-                "en": glossaries_path + "/en-US.csv",
-                "jp": glossaries_path + "/ja-JP.csv",
+                Language.TW: glossaries_path + "/cmn-Hant-TW.csv",
+                Language.DE: glossaries_path + "/de-DE.csv",
+                Language.EN: glossaries_path + "/en-US.csv",
+                Language.JP: glossaries_path + "/ja-JP.csv",
             }
             if glossaries_path
             else glossaries_paths
         )
 
-        fix_maps = {
-            "Traditional Chinese": "zh",
-            "German": "de",
-            "English": "en",
-            "Japanese": "jp",
-        }
+        # fix_maps = {
+        #     "Traditional Chinese": Language.TW,
+        #     "German": Language.DE,
+        #     "English": Language.EN,
+        #     "Japanese": Language.JP,
+        # }
 
-        paths = {fix_maps[key]: str(value) for key, value in paths.items()}
+        # paths = {fix_maps[key]: str(value) for key, value in paths.items()}
 
         katakana_dict = {
             "DDR Ratio": "ディーディーアール レシオ",
@@ -207,10 +208,10 @@ class TranslationService:
 
         formatted_term_dict = "\n".join(
             [
-                f"- {dfs['en'].iloc[i]['Proper Noun ']}: {dfs['zh'].iloc[i]['Proper Noun ']} (繁體中文), "
-                f"{dfs['en'].iloc[i]['Proper Noun ']} (英文), {dfs['de'].iloc[i]['Proper Noun ']} (德文), "
-                f"{dfs['jp'].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs['jp'].iloc[i]['Proper Noun '], dfs['jp'].iloc[i]['Proper Noun '])} (日文)"
-                for i in range(len(dfs["en"]))
+                f"- {dfs[Language.EN].iloc[i]['Proper Noun ']}: {dfs[Language.TW].iloc[i]['Proper Noun ']} (繁體中文), "
+                f"{dfs[Language.EN].iloc[i]['Proper Noun ']} (英文), {dfs[Language.DE].iloc[i]['Proper Noun ']} (德文), "
+                f"{dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.JP].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])} (日文)"
+                for i in range(len(dfs[Language.EN]))
             ]
         )
 

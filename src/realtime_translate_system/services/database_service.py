@@ -1,9 +1,6 @@
-import psycopg2
 import numpy as np
-from vertexai.language_models import TextEmbeddingModel
-import ast
 from typing import List, Dict, Any
-from realtime_translate_system.services.ai_service import  EmbeddingService
+from realtime_translate_system.services.ai_service import EmbeddingService
 from realtime_translate_system.models.doc import Doc
 from realtime_translate_system.models import db
 from sqlalchemy import text
@@ -18,6 +15,7 @@ from datetime import datetime
 #     "port": "5433"
 # }
 
+
 class DatabaseService:
     def __init__(self, embedding_service: EmbeddingService):
         self.embedding_service = embedding_service
@@ -25,60 +23,72 @@ class DatabaseService:
     def get_text_embedding(self, text: str) -> np.ndarray:
         """使用 Google Vertex AI 取得文本的嵌入向量 (768 維)"""
         return np.array(self.embedding_service.get_embedding(text))
-    
-    def insert_meeting(self, title: str, transcript_chinese: str, transcript_english: str,
-                         transcript_german: str, transcript_japanese: str, keywords: list):
+
+    def insert_meeting(
+        self,
+        title: str,
+        transcript_chinese: str,
+        transcript_english: str,
+        transcript_german: str,
+        transcript_japanese: str,
+        keywords: list,
+    ):
         """插入新的會議記錄"""
         try:
-        
             embedding_array = self.get_text_embedding(transcript_chinese)
-            embedding_list = embedding_array.tolist()  #  轉換為 Python List，才能存入 SQLAlchemy
+            embedding_list = (
+                embedding_array.tolist()
+            )  #  轉換為 Python List，才能存入 SQLAlchemy
 
             # 🔹 **SQL 插入語句**
-            sql = text("""
+            sql = text(
+                """
                 INSERT INTO documents (
-                    title, created_at, updated_at, transcript_chinese, transcript_english, 
+                    title, transcript_chinese, transcript_english, 
                     transcript_german, transcript_japanese, embedding, keywords
                 ) VALUES (
-                    :title, :created_at, :updated_at, :transcript_chinese, :transcript_english,
+                    :title, :transcript_chinese, :transcript_english,
                     :transcript_german, :transcript_japanese, :embedding, :keywords
                 ) RETURNING id;
-            """)
+            """
+            )
 
             # 🔹 **執行 SQL 插入**
-            result = db.session.execute(sql, {
-                "title": title,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
-                "transcript_chinese": transcript_chinese,
-                "transcript_english": transcript_english,
-                "transcript_german": transcript_german,
-                "transcript_japanese": transcript_japanese,
-                "embedding": embedding_list,
-                "keywords": keywords
-            })
+            result = db.session.execute(
+                sql,
+                {
+                    "title": title,
+                    # "created_at": datetime.now(),
+                    # "updated_at": datetime.now(),
+                    "transcript_chinese": transcript_chinese,
+                    "transcript_english": transcript_english,
+                    "transcript_german": transcript_german,
+                    "transcript_japanese": transcript_japanese,
+                    "embedding": embedding_list,
+                    "keywords": keywords,
+                },
+            )
 
             db.session.commit()
 
             new_id = result.fetchone()[0]  # 取得新插入的 ID
-            print(f" 嵌入向量成功插入！ID: {new_id}")
             return new_id  # 返回插入的對象 ID
 
         except Exception as e:
-            db.session.rollback()
             print(f"❌ 插入失敗: {e}")
+            db.session.rollback()
             return None
 
         except Exception as e:
             db.session.rollback()
             print(f"插入失敗: {e}")
             return None
-        
+
     def get_meeting(self, doc_id: int) -> Doc:
         """獲取 `documents` 表中的一筆資料，並返回字典包含內容與 `type()`"""
         try:
             meeting = db.session.query(Doc).filter_by(id=doc_id).first()
-            
+
             if meeting:
                 # meeting_data = {}
                 # print("📄 會議記錄內容：")
@@ -95,7 +105,7 @@ class DatabaseService:
             db.session.rollback()
             print(f"❌ 查詢失敗: {e}")
             return None
-    
+
     def get_meetings(self) -> List[Doc]:
         """獲取所有會議記錄"""
         # try:
@@ -111,7 +121,9 @@ class DatabaseService:
             print(f"查詢失敗: {e}")
             return []
 
-    def search_meetings(self, query_embedding: List[float], top_k: int = 5) -> List[Doc]:
+    def search_meetings(
+        self, query_embedding: List[float], top_k: int = 5
+    ) -> List[Doc]:
         """透過關鍵字搜尋會議記錄，返回 `top_k` 筆結果，並包含所有欄位"""
         # try:
         #     self.cur.execute("""
@@ -127,20 +139,24 @@ class DatabaseService:
         #     return []
         # 🔹 修正 SQL 查詢，移除 `content` 並確保 `similarity` 排序
         try:
-            sql = text("""
+            sql = text(
+                """
                 SELECT id, title, created_at, updated_at, transcript_chinese, transcript_english, 
                         transcript_german, transcript_japanese, embedding, keywords
                 FROM documents
                 ORDER BY embedding <=> (:query_embedding)::vector(768) ASC
                 LIMIT :top_k;
-            """)
+            """
+            )
 
             # 🔹 執行查詢
-            result = db.session.execute(sql, {
-                "query_embedding": query_embedding,
-                "top_k": top_k
-            }).mappings().all()
-
+            result = (
+                db.session.execute(
+                    sql, {"query_embedding": query_embedding, "top_k": top_k}
+                )
+                .mappings()
+                .all()
+            )
 
             # #  檢查是否有結果
             # if not result:
@@ -154,21 +170,27 @@ class DatabaseService:
             #     for key, value in row.items():
             #         print(f"  {key}: {value} (type: {type(value).__name__})")
 
-
             return [Doc(**row) for row in result]
-
 
         except Exception as e:
             print(f"❌ 查詢失敗: {e}")
             db.session.rollback()
             return []
 
-    def update_meeting(self, doc_id: int, title: str, transcript_chinese: str, transcript_english: str,
-                       transcript_german: str, transcript_japanese: str, keywords: list):
+    def update_meeting(
+        self,
+        doc_id: int,
+        title: str,
+        transcript_chinese: str,
+        transcript_english: str,
+        transcript_german: str,
+        transcript_japanese: str,
+        keywords: list,
+    ):
         """更新會議記錄，並自動更新 updated_at"""
         try:
             doc = db.session.query(Doc).filter_by(id=doc_id).first()
-            
+
             if not doc:
                 print(f"更新失敗 找不到 ID {doc_id} 的記錄")
                 return False
@@ -192,31 +214,18 @@ class DatabaseService:
             return False
 
 
-
-
 if __name__ == "__main__":
-    db_service = DatabaseService()
-    
-    # print("🔹 測試 save_meeting")
-    # db_service.save_meeting("會議3", "每天學習一點新知識，長期下來會帶來意想不到的收穫。", ["AI", "科技"])
-    
-    # print("🔹 測試 get_meetings")
-    # meetings = db_service.get_meetings()
-    # for meeting in meetings:
-    #     print(meeting)
-    
-    # print("🔹 測試 update_meeting")
-    # db_service.update_meeting(1, "更新後的會議1", "這是更新後的內容", ["AI", "數據"])
-    
-    # print("🔹 測試 search_meetings")
-    # query_embedding = "全球暖化"
-    # query_embedding = db_service.get_text_embedding(query_embedding)
-    # results = db_service.search_meetings(query_embedding.tolist(), top_k=3)
-    # for result in results:
-    #     print(result)
-    
+    embedding_service = EmbeddingService("text-multilingual-embedding-002")
+    db_service = DatabaseService(embedding_service=embedding_service)
 
-
+    db_service.insert_meeting(
+        title="AI 發展趨勢",
+        transcript_chinese="人工智能正在快速發展，對各行各業產生深遠影響。",
+        transcript_english="Artificial intelligence is rapidly evolving and has a profound impact on various industries.",
+        transcript_german="Künstliche Intelligenz entwickelt sich rasant und hat tiefgreifende Auswirkungen auf verschiedene Branchen.",
+        transcript_japanese="人工知能は急速に進化しており、さまざまな業界に深い影響を与えています。",
+        keywords=["AI", "Machine Learning", "科技"],
+    )
 
 
 # 測試插入文本
@@ -229,7 +238,7 @@ if __name__ == "__main__":
 # 在效能測試或超頻調校時，DDR Ratio 可能影響系統穩定性與頻寬表現，因此調整記憶體參數時需要考量此比例，以確保最佳的運行效能和穩定性。"""
 # insert_embedding(text_input)
 
-#查詢所有文檔
+# 查詢所有文檔
 # fetch_all_Docs()
 
 # # 查詢相似文檔
