@@ -3,11 +3,17 @@ import { chatSocket } from "./socket.js";
 export function chat(val) {
   // 使用者送出訊息後，先將訊息加入畫面
   addChatMessage(val, "user");
+  const loadingMessage = addLoadingMessage();
+  $("#chat-messages").append(loadingMessage);
+  $("#chat-input").val("");
+  
   chatSocket.emit("user_message", {
     message: val,
   });
-  const $chatInput = $("#chat-input");
-  $chatInput.val("");
+  chatSocket.once("bot_message", (data) => {
+    loadingMessage.remove(); // 移除「AI 思考中...」
+    addChatMessage(data["message"], "ai"); // 顯示 AI 回應
+  });
 }
 
 chatSocket.on("bot_message", (data) => {
@@ -73,4 +79,12 @@ function addChatMessage(message, type) {
   $chatMessages.append(messageElement);
   // 保持捲動在最底部
   $chatMessages.scrollTop($chatMessages[0].scrollHeight);
+}
+
+function addLoadingMessage() {
+  return $(`
+    <div class="message-container ai">
+      <div class="message-ai">AI is typing...</div>
+    </div>
+  `);
 }
