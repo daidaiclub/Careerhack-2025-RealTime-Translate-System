@@ -23,4 +23,4 @@ class Doc(db.Model):  # 繼承 db.Model，定義 ORM 模型
     transcript_japanese = db.Column(db.Text, nullable=False, default="")
 
     def __repr__(self):
-        return f"<Document {self.title}, Last updated: {self.update_time}>"
+        return f"<Document {self.title}, Last updated: {self.updated_at}>"

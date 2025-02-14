@@ -37,10 +37,10 @@ class DatabaseService:
             # 🔹 **SQL 插入語句**
             sql = text("""
                 INSERT INTO documents (
-                    title, created_at, update_time, transcript_chinese, transcript_english, 
+                    title, created_at, updated_at, transcript_chinese, transcript_english, 
                     transcript_german, transcript_japanese, embedding, keywords
                 ) VALUES (
-                    :title, :created_at, :update_time, :transcript_chinese, :transcript_english,
+                    :title, :created_at, :updated_at, :transcript_chinese, :transcript_english,
                     :transcript_german, :transcript_japanese, :embedding, :keywords
                 ) RETURNING id;
             """)
@@ -49,7 +49,7 @@ class DatabaseService:
             result = db.session.execute(sql, {
                 "title": title,
                 "created_at": datetime.now(),
-                "update_time": datetime.now(),
+                "updated_at": datetime.now(),
                 "transcript_chinese": transcript_chinese,
                 "transcript_english": transcript_english,
                 "transcript_german": transcript_german,
@@ -99,7 +99,7 @@ class DatabaseService:
     def get_meetings(self) -> List[Doc]:
         """獲取所有會議記錄"""
         # try:
-        #     self.cur.execute("SELECT id, title, created_at, update_time, content, embedding, keywords FROM Docs;")
+        #     self.cur.execute("SELECT id, title, created_at, updated_at, content, embedding, keywords FROM Docs;")
         #     rows = self.cur.fetchall()
         #     return [Doc(row[0], row[1], row[2], row[3], row[4], row[5], row[6]) for row in rows]
         # except Exception as e:
@@ -115,7 +115,7 @@ class DatabaseService:
         """透過關鍵字搜尋會議記錄，返回 `top_k` 筆結果，並包含所有欄位"""
         # try:
         #     self.cur.execute("""
-        #         SELECT id, title, created_at, update_time, content, embedding, keywords, embedding <=> %s::vector(768) AS similarity
+        #         SELECT id, title, created_at, updated_at, content, embedding, keywords, embedding <=> %s::vector(768) AS similarity
         #         FROM Docs
         #         ORDER BY similarity ASC
         #         LIMIT %s;
@@ -128,7 +128,7 @@ class DatabaseService:
         # 🔹 修正 SQL 查詢，移除 `content` 並確保 `similarity` 排序
         try:
             sql = text("""
-                SELECT id, title, created_at, update_time, transcript_chinese, transcript_english, 
+                SELECT id, title, created_at, updated_at, transcript_chinese, transcript_english, 
                         transcript_german, transcript_japanese, embedding, keywords
                 FROM documents
                 ORDER BY embedding <=> (:query_embedding)::vector(768) ASC
@@ -165,7 +165,7 @@ class DatabaseService:
 
     def update_meeting(self, doc_id: int, title: str, transcript_chinese: str, transcript_english: str,
                        transcript_german: str, transcript_japanese: str, keywords: list):
-        """更新會議記錄，並自動更新 update_time"""
+        """更新會議記錄，並自動更新 updated_at"""
         try:
             doc = db.session.query(Doc).filter_by(id=doc_id).first()
             
@@ -180,7 +180,7 @@ class DatabaseService:
             doc.transcript_japanese = transcript_japanese
             doc.keywords = keywords
             doc.embedding = self.get_text_embedding(transcript_chinese).tolist()
-            doc.update_time = datetime.now()
+            doc.updated_at = datetime.now()
 
             db.session.commit()
             print(f"成功更新 ID {doc_id} 的會議記錄")
