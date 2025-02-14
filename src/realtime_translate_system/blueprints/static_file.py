@@ -1,4 +1,5 @@
 from flask import Blueprint, send_from_directory
+from werkzeug.exceptions import NotFound
 
 static_file_bp = Blueprint("static_file", __name__)
 
@@ -6,7 +7,7 @@ static_file_bp = Blueprint("static_file", __name__)
 def static_files(filename):
     try:
         return send_from_directory("static", filename)
-    except FileNotFoundError:
+    except NotFound:
         return send_from_directory("static", "index.html")
 
 

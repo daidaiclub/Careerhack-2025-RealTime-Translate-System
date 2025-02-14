@@ -14,7 +14,10 @@ def get_docs():
             {
                 "id": doc.id,
                 "title": doc.title,
-                "content": doc.content,
+                "transcript_chinese": doc.transcript_chinese,
+                "transcript_english": doc.transcript_english,
+                "transcript_german": doc.transcript_german,
+                "transcript_japanese": doc.transcript_japanese,
                 "updated_at": doc.updated_at.isoformat(),
             }
             for doc in docs
@@ -30,7 +33,10 @@ def get_doc(doc_id):
             {
                 "id": doc.id,
                 "title": doc.title,
-                "content": doc.content,
+                "transcript_chinese": doc.transcript_chinese,
+                "transcript_english": doc.transcript_english,
+                "transcript_german": doc.transcript_german,
+                "transcript_japanese": doc.transcript_japanese,
                 "updated_at": doc.updated_at.isoformat(),
             }
         )
@@ -41,10 +47,20 @@ def get_doc(doc_id):
 def create_doc():
     data = request.get_json()
     title = data.get("title", "新會議")
-    content = data.get("content", "")
+    transcript_chinese = data.get("transcript_chinese", "")
+    transcript_english = data.get("transcript_english", "")
+    transcript_german = data.get("transcript_german", "")
+    transcript_japanese = data.get("transcript_japanese", "")
     updated_at = datetime.now()
 
-    new_doc = Doc(title=title, content=content, updated_at=updated_at)
+    new_doc = Doc(
+        title=title,
+        transcript_chinese=transcript_chinese,
+        transcript_english=transcript_english,
+        transcript_german=transcript_german,
+        transcript_japanese=transcript_japanese,
+        updated_at=updated_at,
+    )
     db.session.add(new_doc)
     db.session.commit()
 
@@ -56,7 +72,10 @@ def update_doc():
     data = request.get_json()
     doc_id = data.get("id")
     title = data.get("title")
-    content = data.get("content")
+    transcript_chinese = data.get("transcript_chinese")
+    transcript_english = data.get("transcript_english")
+    transcript_german = data.get("transcript_german")
+    transcript_japanese = data.get("transcript_japanese")
     updated_at = datetime.now()
 
     if not doc_id:
@@ -67,8 +86,21 @@ def update_doc():
         return jsonify({"error": "Doc not found"}), 404
 
     doc.title = title
-    doc.content = content
+    doc.transcript_chinese = transcript_chinese
+    doc.transcript_english = transcript_english
+    doc.transcript_german = transcript_german
+    doc.transcript_japanese = transcript_japanese
     doc.updated_at = updated_at
     db.session.commit()
 
     return jsonify({"status": "ok"})
+
+
+@doc_bp.route("/<int:doc_id>", methods=["DELETE"])
+def delete_doc(doc_id):
+    doc = Doc.query.get(doc_id)
+    if doc:
+        db.session.delete(doc)
+        db.session.commit()
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "Doc not found"}), 404

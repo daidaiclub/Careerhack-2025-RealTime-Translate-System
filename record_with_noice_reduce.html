@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錄音並抗噪儲存</title>
+</head>
+
+<body>
+    <button id="recordButton">開始錄音</button>
+    <audio id="audioPlayer" controls></audio>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        document.getElementById("recordButton").addEventListener("click", async () => {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("瀏覽器不支援錄音功能！");
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const audioContext = new AudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+
+                // **建立抗噪濾波器**
+                const highPassFilter = audioContext.createBiquadFilter();
+                highPassFilter.type = "highpass";
+                highPassFilter.frequency.value = 100; // 過濾低頻噪音
+
+                const lowPassFilter = audioContext.createBiquadFilter();
+                lowPassFilter.type = "lowpass";
+                lowPassFilter.frequency.value = 4000; // 過濾高頻噪音
+
+                // **創建 MediaStreamDestination 以便錄製處理後的音訊**
+                const destination = audioContext.createMediaStreamDestination();
+
+                // **連接濾波器**
+                source.connect(highPassFilter);
+                highPassFilter.connect(lowPassFilter);
+                lowPassFilter.connect(destination); // 記住，這裡不要連接到喇叭（避免回音）
+
+                // **用處理後的音訊流來錄音**
+                mediaRecorder = new MediaRecorder(destination.stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                    const formData = new FormData();
+                    formData.append("audio", audioBlob, "recorded_audio.wav");
+
+                    // **將音檔上傳到後端**
+                    try {
+                        const response = await fetch("http://127.0.0.1:5000/upload_google", {
+                            method: "POST",
+                            body: formData
+                        });
+                        const result = await response.json();
+
+                        if (result.transcription) {
+                            console.log("轉錄結果：", result.transcription);
+                            alert("轉錄結果：" + result.transcription);  // 彈出轉錄文字
+                        } else {
+                            console.error("轉錄失敗：", result.error);
+                        }
+                    } catch (error) {
+                        console.error("上傳或轉錄失敗：", error);
+                    }
+                };
+
+                mediaRecorder.start();
+                document.getElementById("recordButton").disabled = true; // 禁用按鈕避免重複錄音
+                setTimeout(() => {
+                    mediaRecorder.stop();
+                    document.getElementById("recordButton").disabled = false; // 錄音結束後啟用按鈕
+                }, 5000); // 10 秒後自動停止錄音
+
+            } catch (error) {
+                console.error("錄音失敗：", error);
+                alert("無法存取麥克風，請檢查權限設定。");
+            }
+        });
+    </script>
+</body>
+
+</html>
