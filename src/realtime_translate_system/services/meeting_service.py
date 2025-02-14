@@ -110,22 +110,34 @@ class MeetingProcessor:
             - Provide at least 3 and at most 8 keywords.
 
         3. **Output Format**
-            - Your response **must be a valid JSON object** in Traditional Chinese.
-            - **Only return the JSON object**, without Markdown (` ```json `) or any explanations.
+            - Your response **must be enclosed within ```json and ```**.
+            - **Do not include any explanations, only return the JSON object**.
+            - The JSON format must strictly follow this structure:
 
         ### **Example Output:**
+        
+        ```json
         {{
             "title": "人工智慧在醫療產業的應用與挑戰",
             "keywords": ["人工智慧", "醫療科技", "機器學習", "數據分析", "醫療影像"]
         }}
+        ```
 
-        Now, analyze the following meeting transcript and return only a valid JSON object in Traditional Chinese.
-
+        Now, analyze the following meeting transcript and return only a valid JSON object enclosed within ```json and ```.
+        
         Meeting Transcript:
         {transcript}
         """
+        
+        generation_config = {
+            "candidate_count": 1,
+            "max_output_tokens": 100,
+            "temperature": 0.8,
+            "top_p": 0.85,
+            "top_k": 30,
+        }
 
-        response = self.llm_service.query(prompt)
+        response = self.llm_service.query(prompt, generation_config)
         parsed_response = self.llm_service.parse_json_response(response)
         
         title = parsed_response.get("title", "未命名會議")
@@ -159,6 +171,14 @@ class MeetingProcessor:
         Now, summarize each meeting separately in Traditional Chinese:
         """
         
-        response = self.llm_service.query(prompt)
+        generation_config = {
+            "candidate_count": 1,
+            "max_output_tokens": 1000,
+            "temperature": 0.5,
+            "top_p": 0.9,
+            "top_k": 40,
+        }
+        
+        response = self.llm_service.query(prompt, generation_config)
         
         return response.text

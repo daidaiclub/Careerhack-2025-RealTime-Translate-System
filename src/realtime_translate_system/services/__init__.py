@@ -7,4 +7,5 @@ from realtime_translate_system.services.term_matcher import TermMatcher
 from realtime_translate_system.services.ai_service import LLMService, EmbeddingService
 from realtime_translate_system.services.meeting_service import MeetingProcessor
 from realtime_translate_system.services.database_service import DatabaseService
+from realtime_translate_system.services.translation_service import TranslationService
 

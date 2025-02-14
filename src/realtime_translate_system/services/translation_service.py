@@ -1,119 +1,131 @@
-import re
+import pandas as pd
 import time
-import vertexai
 from vertexai.generative_models import GenerativeModel
-import vertexai.preview.generative_models as generative_models
+from realtime_translate_system.services.ai_service import LLMService
 
 
 class TranslationService:
-    def __init__(self, location: str = "us-central1", project_id: str = None):
-        self.location = location
-        self.project_id = project_id
-
-        if not self.project_id:
-            raise ValueError("Project ID is required for Vertex AI")
-
-        vertexai.init(project=self.project_id, location=self.location)
+    def __init__(self, llm_service: LLMService):
+        self.llm_service = llm_service
 
         self.generation_config = {
             "candidate_count": 1,
             "max_output_tokens": 1000,
-            "temperature": 1.0,
-            "top_p": 0.95,
-            "top_k": 3,
+            "temperature": 0.3,
+            "top_p": 0.8,
+            "top_k": 5,
         }
 
-        self.safety_settings = {
-            generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            generative_models.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-            generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-        }
-
-        # 指定要用的模型
-        self.model = GenerativeModel("gemini-1.5-flash-002")
-
-    def _clean_translation_output(self, response: str):
-        """
-        解析並整理 Gemini Chat 的翻譯輸出，確保格式一致。
-        """
-        translations = {
-            "Traditional Chinese": "",
-            "English": "",
-            "German": "",
-            "Japanese": "",
-        }
-
-        # 解析每一行的語言與對應翻譯
-        lines = response.strip().split("\n")
-        correct_lang_count = 0
-        for line in lines:
-            match = re.match(
-                r"- (Traditional Chinese|English|German|Japanese):\s*(.+)", line
-            )
-            if match:
-                lang = match.group(1)
-                text = match.group(2).strip()
-                cleaned_text = re.sub(r"\(.*?\)", "", text).strip()
-                translations[lang] = cleaned_text
-                correct_lang_count += 1
-
-        result = {
-            "status": "success" if correct_lang_count == 4 else "error",
-            "values": translations,
-        }
-
-        return result
-
-    def translate(self, content: str) -> str:
+    def translate(self, content: str, previous_translation: dict = None, term_dict: str = "") -> str:
         """
         進行翻譯並回傳結果
         """
-
-        # TODO: 可以增加前面的逐字稿，提供給他上下文，讓翻譯更準確
-        prompt = """
-    You are a professional translator specializing in Traditional Chinese, English, German, and Japanese. Your task is to translate the given sentence into all four languages.
-
-    Follow these rules:
-    1. The input sentence will be in one of the following languages: Traditional Chinese, English, German, or Japanese.
-    2. You must translate the sentence into:
-       - Traditional Chinese
-       - English
-       - German
-       - Japanese
-    3. If the input language is not one of these four, return: "CAN NOT TRANSLATE."
-    4. Ensure that the translations are natural, fluent, and maintain the original meaning.
-    5. Proper nouns including names of people, places, and companies should not be translated.
-
-    Provide the response in the following format:
-    - Traditional Chinese: <translated text>
-    - English: <translated text>
-    - German: <translated text>
-    - Japanese: <translated text>
-
-    Input:
-    """
-
-        responses = self.model.generate_content(
-            [prompt, content],
-            generation_config=self.generation_config,
-            safety_settings=self.safety_settings,
+        previous_translation_text = ""
+        
+        if previous_translation:
+            previous_translation_text = """
+            - Previous sentence: {previous_sentence}
+            - The translation of the previous sentence is as follows:
+            - Traditional Chinese: {zh}
+            - English: {en}
+            - German: {de}
+            - Japanese: {jp}
+            """.format(
+                previous_sentence=previous_translation.get("previous_sentence", "None") if previous_translation else "None",
+                zh=previous_translation.get("zh", "None") if previous_translation else "None",
+                en=previous_translation.get("en", "None") if previous_translation else "None",
+                de=previous_translation.get("de", "None") if previous_translation else "None",
+                jp=previous_translation.get("jp", "None") if previous_translation else "None",
         )
 
-        # 將逐行流式輸出合併成完整翻譯文字
-        translated_text = self._clean_translation_output(responses.text)
-        if translated_text["status"] == "error":
-            translated_text = {
-                "status": "error",
-                "values": {
-                    "Traditional Chinese": content,
-                    "English": content,
-                    "German": content,
-                    "Japanese": content,
-                },
-            }
+        prompt = f"""
+        You are a professional translator specializing in Traditional Chinese, English, German, and Japanese. Your task is to accurately translate the given sentence into these four languages while ensuring that the translation maintains **semantic meaning, grammar, and tone consistency**.
 
-        return translated_text.get("values", {})
+        ### Rules:
+        1. **Input Language**
+            - The input sentence will always be in one of the following languages: Traditional Chinese, English, German, or Japanese.
+            - If the input language is not among these four, **return the original sentence without translation or modification**.
+
+        2. **Handling of Proper Nouns**
+            - Please refer to the following proper noun dictionary to ensure the correct usage of terms during translation:
+            {term_dict}
+
+        3. **To ensure contextual consistency, here is the translation of the previous sentence for reference**
+            {previous_translation_text}
+
+        4. **Output Format**
+            - Your response **must be enclosed within ```json and ```**.
+            - **Do not include any explanations, only return the JSON object**.
+            - The JSON format must strictly follow this structure:
+        
+        ```json
+        {{
+            "zh": "<translated Traditional Chinese text>",
+            "en": "<translated English text>",
+            "de": "<translated German text>",
+            "jp": "<translated Japanese text>"
+        }}
+        ```
+        
+        ### Examples:
+        1. Input Sentence: "這是一個測試。"  
+        
+        ```json
+        Output: {{
+            "zh": "這是一個測試。",
+            "en": "This is a test.",
+            "de": "Das ist ein Test.",
+            "jp": "これはテストです。"
+        }}
+        ```
+        
+        2. Input Sentence: "Gestern hatten wir ein wichtiges Meeting über KI-Technologien."  
+        
+        ```json
+        Output: {{
+            "zh": "昨天我們有一場重要的關於人工智慧技術的會議。",
+            "en": "Yesterday we had an important meeting about AI technologies.",
+            "de": "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
+            "jp": "昨日、私たちはAI技術に関する重要な会議を行いました。"
+        }}
+        ```
+
+        Now, translate the following sentence into the required languages and return only a valid JSON object enclosed within ```json and ```.
+
+        **Input Sentence:**  
+        {content}
+        """
+
+        response = self.llm_service.query(prompt, self.generation_config)
+        parsed_response = self.llm_service.parse_json_response(response)
+
+        return {
+            "previous_sentence": content.strip(),
+            "zh": parsed_response.get("zh", "None"),
+            "en": parsed_response.get("en", "None"),
+            "de": parsed_response.get("de", "None"),
+            "jp": parsed_response.get("jp", "None")
+        }
+
+    def load_term_dict(self, glossaries_path="") -> str:
+        """
+        讀取並格式化專有名詞對應表
+        """
+        paths = {
+            "zh": glossaries_path + "/cmn-Hant-TW.csv",
+            "de": glossaries_path + "/de-DE.csv",
+            "en": glossaries_path + "/en-US.csv",
+            "jp": glossaries_path + "/ja-JP.csv"
+        }
+
+        dfs = {lang: pd.read_csv(path) for lang, path in paths.items()}
+
+        return "\n".join([
+            f"- {dfs['en'].iloc[i]['Proper Noun ']}: {dfs['zh'].iloc[i]['Proper Noun ']} (繁體中文), "
+            f"{dfs['en'].iloc[i]['Proper Noun ']} (英文), {dfs['de'].iloc[i]['Proper Noun ']} (德文), "
+            f"{dfs['jp'].iloc[i]['Proper Noun ']} (日文)"
+            for i in range(len(dfs['en']))
+        ])
 
 
 if __name__ == "__main__":
@@ -131,15 +143,6 @@ if __name__ == "__main__":
 : 登
 : ありがとう ござい ます 。
 : Bye-bye.
-"""
-
-    transcripts = """
-: soigys ie yn ty
-: owue hhhg kk
-: This is a test.
-: 這是一個測試。
-: これはテストです。
-: Das ist ein Test.
 """
 
     text_list = transcripts.split("\n")

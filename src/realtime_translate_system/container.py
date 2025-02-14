@@ -7,7 +7,8 @@ from realtime_translate_system.services import (
     TermMatcher,
     LLMService, EmbeddingService,
     MeetingProcessor,
-    DatabaseService
+    DatabaseService,
+    TranslationService
 )
 import vertexai
 
@@ -39,7 +40,8 @@ class Container(containers.DeclarativeContainer):
     
     vertexai.init(project=config.PROJECT_ID, location=config.LOCATION)
 
-    llm_service = providers.Singleton(LLMService, model_name="gemini-1.5-pro-002")
+    llm_service_pro = providers.Factory(LLMService, model_name="gemini-1.5-pro-002")
+    llm_service_flash = providers.Factory(LLMService, model_name="gemini-1.5-flash-002")
     embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")
     
     database_service = providers.Singleton(
@@ -49,7 +51,12 @@ class Container(containers.DeclarativeContainer):
     
     meeting_processor = providers.Singleton(
         MeetingProcessor,
-        llm_service=llm_service,
+        llm_service=llm_service_pro,
         db_service=database_service,
         embedding_service=embedding_service
+    )
+
+    translation_service = providers.Singleton(
+        TranslationService,
+        llm_service=llm_service_flash
     )
