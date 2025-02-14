@@ -1,4 +1,5 @@
 export const audioSocket = io("/audio_stream", { path: "/socket.io" });
+export const chatSocket = io("/chat", { path: "/socket.io" });
 
 audioSocket.on("connect", () => {
   console.log("Connected to /audio_stream, id:", audioSocket.id);

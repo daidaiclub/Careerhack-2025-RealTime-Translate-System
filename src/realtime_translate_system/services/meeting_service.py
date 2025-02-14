@@ -64,8 +64,14 @@ class RetrievalAugmentedGeneration:
 
         results = self.db_service.get_meetings()
 
+        if search_date:
+            # 將 search_date 字串轉換成 date 物件
+            search_date_obj = datetime.strptime(search_date, "%Y-%m-%d").date()
+        else:
+            search_date_obj = None
+
         filtered_meetings = [
-            doc for doc in results if not search_date or doc.created_at.date() == search_date
+            doc for doc in results if not search_date_obj or doc.created_at.date() == search_date_obj
         ]
         
         if search_keywords:
@@ -151,8 +157,8 @@ class MeetingProcessor:
         """
 
         # 定義「找出會議」與「總結會議」的代表性描述
-        retrieval_task = "搜尋找出包含關鍵字的歷史會議記錄"
-        summarization_task = "針對會議內容撰寫摘要，整理核心重點與決策"
+        retrieval_task = "搜尋找出特定主題的會議記錄"
+        summarization_task = "總結與整理會議的核心結論"
 
         # 取得嵌入向量
         embedding_retrieval = np.array(self.embedding_service.get_embedding(retrieval_task))
@@ -175,7 +181,8 @@ class MeetingProcessor:
         retrieved_meetings = self.rag_service.hybrid_search(user_query)
         
         if self._is_retrieval_query(user_query):
-            return retrieved_meetings
+            print(retrieved_meetings)
+            return [meeting.to_dict() for meeting in retrieved_meetings]
         
         meetings_context = "\n\n".join([
             f"**Meeting Title:** {meeting.title}\n"

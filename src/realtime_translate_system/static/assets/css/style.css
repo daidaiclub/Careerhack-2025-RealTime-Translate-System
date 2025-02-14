@@ -30,7 +30,7 @@ body {
   background-color: #333;
 }
 
-.list-unstyled li {
+.list-unstyled li:first-child {
   display: flex;
   align-items: center;
 }
@@ -60,7 +60,7 @@ body {
 }
 
 #meeting-title {
-  margin-right: 4px; 
+  margin-right: 4px;
 }
 
 #edit-title-btn {
@@ -122,12 +122,14 @@ body {
   width: 120px;
 }
 
-.fas, .fa-solid {
+.fas,
+.fa-solid {
   font-size: 28px;
 }
 
 .form-control,
-.form-control:focus {
+.form-control:focus,
+.tiptap {
   height: 60px;
   background-color: #333;
   color: white;
@@ -135,15 +137,31 @@ body {
   resize: none;
 }
 
-.form-control:focus {
+.tiptap p {
+  margin: 0;
+  font-size: 20px;
+}
+
+.form-control:focus,
+.outline-none {
   box-shadow: none;
+  outline: none;
 }
 
 .form-control::placeholder {
   color: white;
 }
 
-textarea.form-control {
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+textarea.form-control,
+.tiptap {
   min-height: calc(100vh - 120px);
 }
 

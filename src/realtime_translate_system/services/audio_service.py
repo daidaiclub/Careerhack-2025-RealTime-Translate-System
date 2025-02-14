@@ -1,5 +1,6 @@
 import os
 from realtime_translate_system.extensions import socketio
+from realtime_translate_system.config import Language
 from .speech_recongizer import SpeechRecognizer
 from .transcript_service import TranscriptService
 from .meeting_service import MeetingProcessor
@@ -26,7 +27,7 @@ class AudioService:
         def callback(text):
             data = self.transcript_service.process(text)
             if data is not None:
-                self.transcript_text += data["Traditional Chinese"]["value"]
+                self.transcript_text += data["text"][Language.TW]["value"]
                 socketio.emit("transcript", data, namespace="/audio_stream")
 
         self.recognizer.transcribe(filepath, callback)

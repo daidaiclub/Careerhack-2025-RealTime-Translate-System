@@ -24,7 +24,8 @@ def get_doeityocs():
 
 @doc_bp.route("/", methods=["GET"])
 def get_docs():
-    current_app.container.database_service().get_meetings()
+    docs = current_app.container.database_service().get_meetings()
+    return jsonify([doc.to_dict() for doc in docs])
 
 
 @doc_bp.route("/<int:doc_id>", methods=["GET"])
@@ -79,7 +80,9 @@ def update_doc():
     transcript_german = data.get("transcript_german")
     transcript_japanese = data.get("transcript_japanese")
 
-    _, keywords = current_app.container.meeting_processor.gen_title_keywords(transcript_chinese)
+    _, keywords = current_app.container.meeting_processor().gen_title_keywords(
+        transcript_chinese
+    )
 
     if not doc_id:
         return jsonify({"error": "Missing doc id"}), 400
@@ -87,7 +90,7 @@ def update_doc():
     doc = Doc.query.get(doc_id)
     if not doc:
         return jsonify({"error": "Doc not found"}), 404
-    
+
     current_app.container.database_service().update_meeting(
         doc_id=doc_id,
         title=title,

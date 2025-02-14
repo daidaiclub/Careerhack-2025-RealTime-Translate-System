@@ -31,12 +31,16 @@ export function openChatbot() {
   $("#chatbot").removeClass("d-none");
   $("#open-chatbot").addClass("d-none");
   $("#close-chatbot").removeClass("d-none");
+  $('.chatbot').css('right', '0');
+  $('.content').css('width', 'calc(85% - 450px)');
 }
 
 export function closeChatbot() {
   $("#chatbot").addClass("d-none");
   $("#open-chatbot").removeClass("d-none");
   $("#close-chatbot").addClass("d-none");
+  $('.chatbot').css('right', '-450px');
+  $('.content').css('width', '85%');
 }
 
 export function toggleMicButton() {

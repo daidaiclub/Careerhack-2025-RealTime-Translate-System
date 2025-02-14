@@ -24,3 +24,10 @@ class Doc(db.Model):  # 繼承 db.Model，定義 ORM 模型
 
     def __repr__(self):
         return f"<Document {self.title}, Last updated: {self.updated_at}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "created_at": self.created_at.isoformat(),
+        }

@@ -10,10 +10,10 @@ function transformFormat(data) {
   return {
     status: data.status,
     text: {
-      chinese: text["Traditional Chinese"],
-      english: text["English"],
-      german: text["German"],
-      japanese: text["Japanese"]
+      chinese: text["Traditional Chinese"]["value"],
+      english: text["English"]["value"],
+      german: text["German"]["value"],
+      japanese: text["Japanese"]["value"]
     }
   };
 }

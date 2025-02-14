@@ -98,10 +98,10 @@ class TranslationService:
         
         ```json
         {{
-            Language.TW: "<translated Traditional Chinese text>",
-            Language.EN: "<translated English text>",
-            Language.DE: "<translated German text>",
-            Language.JP: "<translated Japanese text>"
+            {Language.TW}: "<translated Traditional Chinese text>",
+            {Language.EN}: "<translated English text>",
+            {Language.DE}: "<translated German text>",
+            {Language.JP}: "<translated Japanese text>"
         }}
         ```
         
@@ -111,10 +111,10 @@ class TranslationService:
         Output: 
         ```json
         {{
-            Language.TW: "這是一個測試。",
-            Language.EN: "This is a test.",
-            Language.DE: "Das ist ein Test.",
-            Language.JP: "これはテストです。"
+            {Language.TW}: "這是一個測試。",
+            {Language.EN}: "This is a test.",
+            {Language.DE}: "Das ist ein Test.",
+            {Language.JP}: "これはテストです。"
         }}
         ```
         
@@ -123,10 +123,10 @@ class TranslationService:
         Output: 
         ```json
         {{
-            Language.TW: "昨天我們有一場重要的關於人工智慧技術的會議。",
-            Language.EN: "Yesterday we had an important meeting about AI technologies.",
-            Language.DE: "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
-            Language.JP: "昨日、私たちはAI技術に関する重要な会議を行いました。"
+            {Language.TW}: "昨天我們有一場重要的關於人工智慧技術的會議。",
+            {Language.EN}: "Yesterday we had an important meeting about AI technologies.",
+            {Language.DE}: "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
+            {Language.JP}: "昨日、私たちはAI技術に関する重要な会議を行いました。"
         }}
         ```
 
@@ -222,17 +222,6 @@ if __name__ == "__main__":
     transcripts = """
 Hello everyone. Today we are going to discuss the issue regarding DDR ratio. It was found out that the ratio on DP is quite high this week. Does Martin know the reason?
 Es tut mir leid, ich hatte gestern Nachtschicht und habe die Angelegenheiten an Lisa übergeben, er kann den Grund erklären.
-今週 の DDR 値 が 高 すぎる 原因 は イルシ が 変更 さ れ た 可能 性 が あり ます 。 マスター パージ と 比較 し た ところ 溫度 など の 周知 が かなり 違っ て い まし た 。
-Why was EC altered? Shouldn't the values align with the master copy? Can I check the system log to identify who made the change?
-可以,我現在要出去啦。
-Additionally, can IT upload the change data to DP? When someone does something unauthorized, it can print out the data and automatically send an alert email to the relevant personnel.
-好的,這件事技術上沒問題,但我需要回去和我老闆討論一下,因為這屬於架構上的change,我這邊需要新增Cloud Function來抓log的資料,BQuery那邊也需要新增table兩位才行。
-Alright, please update me on this matter next time. Also, Martin, please investigate why easy was changed and update me next time. Thank you.
-Alles klar, ich werde die Angelegenheit weiterverfolgen.
-That concludes today's meeting. Thank you everyone.
-登
-ありがとう ござい ます 。
-Bye-bye.
 """
 
     text_list = transcripts.split("\n")

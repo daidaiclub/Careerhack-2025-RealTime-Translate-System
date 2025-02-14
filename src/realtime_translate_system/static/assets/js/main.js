@@ -1,10 +1,11 @@
 import { triggerFileUpload, triggerUploadFile } from "./upload.js";
 import { openChatbot, closeChatbot } from "./ui.js";
-import { debouncedInputContent, fetchDocs, deleteDoc, loadDocFromURL, toggleTitleEdit, resetToNewMeeting, triggerLanguageSelect, initAutoSave } from "./document.js";
+import { debouncedInputContent, fetchDocs, deleteDoc, loadDocFromURL, toggleTitleEdit, resetToNewMeeting, triggerLanguageSelect, saveDoc } from "./document.js";
 import { chat } from "./chatbot.js";
 import { getDocIdFromURL } from "./utils.js";
 import { triggerMicButton } from "./audio.js";
 import "./transcript.js";
+import "./editor.js";
 
 function initDeleteButton() {
   const $btn = $("#delete-btn");
@@ -37,10 +38,10 @@ $(document).ready(function () {
   });
   $("#transcript_area").on("input", debouncedInputContent);
   $("#doc-list").on("click", "li:first", resetToNewMeeting);
+  $("#save-btn").on("click", saveDoc);
   $("#mic-btn").click(triggerMicButton);
 
   initDeleteButton();
-  initAutoSave();
   fetchDocs();
   loadDocFromURL();
 });
@@ -69,4 +70,5 @@ $(document).ready(function () {
 window.addEventListener("locationchange", () => {
   initDeleteButton();
   fetchDocs();
+  loadDocFromURL();
 });

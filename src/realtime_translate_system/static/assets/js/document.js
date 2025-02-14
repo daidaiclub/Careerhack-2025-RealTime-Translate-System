@@ -46,7 +46,6 @@ export function toggleTitleEdit() {
     const newTitle = dom.$meetingTitleInput.val();
     dom.$meetingTitle.text(newTitle);
     state.currentTitle = newTitle;
-    saveDoc();
   } else {
     // 進入編輯模式，填入目前標題並 focus
     dom.$meetingTitleInput.val(dom.$meetingTitle.text()).focus();
@@ -68,20 +67,42 @@ export async function fetchDocs() {
     const docs = await DocAPI.fetchDocs();
     dom.$docList.find("li:not(:first)").remove();
     docs.forEach(doc => {
+      // 建立 li 元素並設定點擊事件
       const li = $("<li>")
-        .text(doc.title)
-        .attr("data-doc-id", doc.id)
         .css("cursor", "pointer")
+        .attr("data-doc-id", doc.id)
         .on("click", function () {
           loadDoc(doc.id);
           window.history.pushState({}, "", "/" + doc.id);
         });
+      
+      // 建立標題元素
+      const titleElem = $("<div>")
+        .text(doc.title)
+        .css({
+          "font-weight": "bold",
+          "font-size": "16px"
+        });
+      
+      // 將 created_at 轉換為日期字串
+      const dateStr = new Date(doc.created_at).toLocaleDateString();
+      // 建立副標題（日期）元素
+      const dateElem = $("<div>")
+        .text(dateStr)
+        .css({
+          "font-size": "16px",
+          "color": "#666"
+        });
+      
+      // 將標題與日期元素加入 li
+      li.append(titleElem, dateElem);
       dom.$docList.append(li);
     });
   } catch (error) {
     console.error(error);
   }
 }
+
 
 /**
  * 根據網址自動載入文件（若網址為 "/" 則表示新文件）
@@ -123,7 +144,8 @@ export async function saveDoc() {
       window.history.pushState({}, "", "/" + state.docId);
     } else {
       const updatePayload = { id: state.docId, ...payload };
-      await DocAPI.updateDoc(updatePayload);
+      const _save_doc = async () => await DocAPI.updateDoc(updatePayload);
+      debounce(_save_doc, 500)();
     }
     fetchDocs();
   } catch (error) {
@@ -191,13 +213,4 @@ export function triggerLanguageSelect(newLang) {
   dom.$transcriptArea.attr("placeholder", placeholders[newLang]);
 
   renderTranscripts();
-}
-
-
-/**
- * 監聽 transcriptState 的變化，若有變化儲存到文件
- */
-export function initAutoSave() {
-  window.autoSaveHandler = debounce(saveDoc, 500);
-  console.log("AutoSave initialized.");
 }
