@@ -1,6 +1,7 @@
 from flask_socketio import SocketIO, Namespace
 import threading
 import queue
+from realtime_translate_system.config import Language
 from realtime_translate_system.services import (
     SpeechRecognizer,
     TranscriptService,
@@ -37,7 +38,7 @@ class AudioNamespace(Namespace):
             def callback(text: str):
                 data = self.transcript_service.process(text)
                 if data is not None:
-                    self.transcript_text += data["Traditional Chinese"]["value"]
+                    self.transcript_text += data["text"][Language.TW]["value"]
                     self.emit("transcript_stream", data)
 
             def done():
