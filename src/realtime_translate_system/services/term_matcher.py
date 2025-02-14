@@ -6,7 +6,7 @@ from fuzzywuzzy import fuzz
 
 
 class TermMatcher:
-    def __init__(self, file_paths: dict, threshold: int = 60):
+    def __init__(self, file_paths: dict, threshold: int = 90):
         """
         初始化 TermMatcher，支援多語言企業術語比對
         :param file_paths: 字典 { "語言名稱": "對應的 CSV 路徑" }
@@ -59,9 +59,10 @@ class TermMatcher:
         """使用 MeCab 進行日語分詞"""
         return self.mecab.parse(input_text).strip().split()
 
-    # 檢查是否為純英文詞
-    def is_english_word(word):
-        return bool(re.match(r'^[A-Za-z\s]+$', word))
+    def _fetch_terms(self, input_text: str, lang: str) -> list:
+        """提取文本中被 `==` 包圍的詞彙"""
+        terms = re.findall(r'==(.+?)==', input_text)
+        return terms
 
     def _match_terms(self, tokens: list, term_dict: dict) -> tuple:
         """模糊比對詞彙，返回匹配的詞與相似度分數"""
@@ -81,99 +82,6 @@ class TermMatcher:
 
         return matched_terms, similarity_scores
 
-    def _merge_adjacent_tokens(self, tokens: list, similarity_scores: dict) -> list:
-        """合併相鄰高相似度詞彙"""
-        merged_tokens = []
-        i = 0
-        while i < len(tokens):
-            if i < len(tokens) - 1:
-                token1, token2 = tokens[i], tokens[i + 1]
-                if token1 in similarity_scores and token2 in similarity_scores:
-                    if (
-                        similarity_scores[token1] >= self.threshold
-                        and similarity_scores[token2] >= self.threshold
-                    ):
-                        if self.is_english_word(token1) and self.is_english_word(token2):
-                            merged_tokens.append(token1 + " " + token2)
-                        else:
-                            merged_tokens.append(token1 + token2)
-                        i += 2
-                        continue
-            merged_tokens.append(tokens[i])
-            i += 1
-        return merged_tokens
-
-    def _final_matching(self, tokens: list, term_dict: dict) -> list:
-        """重新比對合併後的詞彙，返回最終匹配結果"""
-        final_matched = []
-
-        for token in tokens:
-            best_match, best_score, best_desc = None, 0, ""
-            for term in term_dict:
-                score = fuzz.partial_ratio(token.lower(), term.lower())
-                if score >= self.threshold and score > best_score:
-                    best_match, best_score, best_desc = term, score, term_dict[term]
-
-            if best_match:
-                final_matched.append((token, best_match, best_score, best_desc))
-
-        return final_matched
-
-    def annotate_text(self, input_text: str, final_matched: list) -> str:
-        """
-        將匹配到的專有名詞替換為 原詞[定義] 的格式，避免重複替換已標記的內容。
-        僅在不在中括號(...)的區域裡才會做替換，防止重複或嵌套注釋。
-        """
-        final_matched_sorted = sorted(
-            final_matched, key=lambda x: len(x[0]), reverse=True
-        )
-
-        token_map = {}
-        for token, term, score, desc in final_matched_sorted:
-            if token.lower() not in token_map:
-                token_map[token.lower()] = desc
-
-        annotated_text = []
-        inside_brackets = False  # 用來標記目前是否在 [ ] 中
-        i = 0
-        n = len(input_text)
-
-        while i < n:
-            ch = input_text[i]
-
-            if ch == "[":
-                # 一旦遇到 '['，表示進入中括號，直接將字元加入結果
-                inside_brackets = True
-                annotated_text.append(ch)
-                i += 1
-            elif ch == "]":
-                # 一旦遇到 ']'，表示離開中括號，直接將字元加入結果
-                inside_brackets = False
-                annotated_text.append(ch)
-                i += 1
-            else:
-                if not inside_brackets:
-                    matched = False
-                    for tk, desc in token_map.items():
-                        token_len = len(tk)
-                        if (
-                            i + token_len <= n
-                            and input_text[i : i + token_len].lower() == tk
-                        ):
-                            original_str = input_text[i : i + token_len]
-                            annotated_text.append(f"{original_str}[{desc}]")
-                            i += token_len
-                            matched = True
-                            break
-                    if not matched:
-                        annotated_text.append(ch)
-                        i += 1
-                else:
-                    annotated_text.append(ch)
-                    i += 1
-
-        return "".join(annotated_text)
-
     def process_text(self, input_text: str, lang: str = None):
         """
         處理單語言文本。
@@ -187,13 +95,11 @@ class TermMatcher:
             raise ValueError(f"Unsupported language: {lang}")
 
         term_dict = self.term_dicts[lang]
-        tokens = self._tokenize_text(input_text, lang)
-        _, similarity_scores = self._match_terms(tokens, term_dict)
-        merged_tokens = self._merge_adjacent_tokens(tokens, similarity_scores)
-        final_matched = self._final_matching(merged_tokens, term_dict)
-        annotated_text = self.annotate_text(input_text, final_matched)
+        terms = self._fetch_terms(input_text, lang)
+        terms, similarity_scores = self._match_terms(terms, term_dict)
+        explains = [desc for _, _, _, desc in terms]
 
-        return merged_tokens, final_matched, annotated_text
+        return explains, similarity_scores
 
     def process_multilingual_text(self, text_dict: dict):
         """
@@ -205,14 +111,23 @@ class TermMatcher:
         output_dict = {}
         for lang, text in text_dict.items():
             if lang in self.term_dicts:
-                output_dict[lang] = self.process_text(text, lang)[2]
+                explains, similarity_scores = self.process_text(text, lang)
+                output_dict[lang] = {
+                    "value": text,
+                    "explains": explains,
+                    "similarity_scores": similarity_scores,
+                }
             else:
-                output_dict[lang] = text  # 未知語言則不做處理
+                output_dict[lang] = {
+                    "value": text,
+                    "explains": [],
+                    "similarity_scores": {},
+                }
         return output_dict
 
 
 if __name__ == "__main__":
-    from config import Config
+    from realtime_translate_system.config import Config
 
     matcher = TermMatcher(Config.FILE_PATHS)
 
@@ -230,23 +145,23 @@ if __name__ == "__main__":
 謝謝。
 掰掰。''' 
 
-    merged_tokens, final_matched, annotated_text = matcher.process_text(
-        input_text, "Traditional Chinese"
-    )
-    print("分詞結果：", merged_tokens)
-    print("\n最終偵測到的專有名詞：")
-    for token, term, score, description in final_matched:
-        print(f"word: {token}, term: {term}, similarity: {score}%, desc: {description}")
+    # merged_tokens, final_matched, annotated_text = matcher.process_text(
+    #     input_text, "Traditional Chinese"
+    # )
+    # print("分詞結果：", merged_tokens)
+    # print("\n最終偵測到的專有名詞：")
+    # for token, term, score, description in final_matched:
+    #     print(f"word: {token}, term: {term}, similarity: {score}%, desc: {description}")
 
-    print("\n帶註釋的文本：")
-    print(annotated_text)
+    # print("\n帶註釋的文本：")
+    # print(annotated_text)
 
     # 處理多語言文本
     text_to_annotate = {
-        "Traditional Chinese": "大家好，今天要討論的是關於DDR Ratio的問題。",
-        "English": "Hello, let's discuss the DDR Ratio issue.",
-        "German": "Hallo, wir sollten das DDR Ratio Problem besprechen.",
-        "Japanese": "こんにちは、DDR Ratioの問題について話し合いましょう。",
+        "Traditional Chinese": "大家好，今天要討論的是關於==DDR Ratio==的問題。",
+        "English": "Hello, let's discuss the ==DDR Ratio== issue.",
+        "German": "Hallo, wir sollten das ==DDR Ratio== Problem besprechen.",
+        "Japanese": "こんにちは、==DDR Ratio==の問題について話し合いましょう。",
     }
 
     annotated_result = matcher.process_multilingual_text(text_to_annotate)

@@ -166,6 +166,7 @@ if __name__ == "__main__":
     )
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
     audio_path = BASE_DIR / "dataset" / "training.wav"
+    audio_path = BASE_DIR / "Testing.wav"
 
     def callback(text):
         print(text)

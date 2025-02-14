@@ -1,7 +1,11 @@
 from flask_socketio import SocketIO, Namespace
 import threading
 import queue
-from realtime_translate_system.services import SpeechRecognizer, TranslationService, TermMatcher
+from realtime_translate_system.services import (
+    SpeechRecognizer,
+    TranscriptService,
+    MeetingProcessor,
+)
 
 
 class AudioNamespace(Namespace):
@@ -10,34 +14,39 @@ class AudioNamespace(Namespace):
         namespace,
         socketio: SocketIO,
         recognizer: SpeechRecognizer,
-        translation_service: TranslationService,
-        term_matcher: TermMatcher,
+        transcript_service: TranscriptService,
+        meeting_processor: MeetingProcessor,
     ):
         super().__init__(namespace)
         self.socketio = socketio
         self.recognizer = recognizer
-        self.translation_service = translation_service
-        self.term_match = term_matcher
+        self.transcript_service = transcript_service
+        self.meeting_processor = meeting_processor
         self.audio_task = None
         self.audio_queue = queue.Queue()
         self.thread_lock = threading.Lock()
+
+        self.transcript_text = ""
 
     def on_audio_stream(self, data):
         """
         處理 WebSocket 傳入的音頻流
         """
         try:
+
             def callback(text: str):
-                if text.strip() == "":
-                    return
-                text = self.translation_service.translate(text)
-                text = self.term_match.process_multilingual_text(text)
-                data = {"status": "continue", "text": text}
-                self.emit("transcript_stream", data)
+                data = self.transcript_service.process(text)
+                if data is not None:
+                    self.transcript_text += data["Traditional Chinese"]["value"]
+                    self.emit("transcript_stream", data)
 
             def done():
+                # generator title and keywords
                 self.audio_task = None
-                data = {"status": "complete"}
+                title, keywords = self.meeting_processor.gen_title_keywords(
+                    self.transcript_text
+                )
+                data = {"status": "complete", "title": title, "keywords": keywords}
                 self.emit("transcript_stream", data)
 
             with self.thread_lock:
@@ -60,9 +69,9 @@ class AudioNamespace(Namespace):
 def init_socketio(
     socketio: SocketIO,
     recognizer: SpeechRecognizer,
-    translation_service: TranslationService,
-    term_matcher: TermMatcher,
+    transcript_service: TranscriptService,
+    meeting_processor: MeetingProcessor,
 ):
     socketio.on_namespace(
-        AudioNamespace("/audio_stream", socketio, recognizer, translation_service, term_matcher)
+        AudioNamespace("/audio_stream", socketio, recognizer, transcript_service, meeting_processor)
     )

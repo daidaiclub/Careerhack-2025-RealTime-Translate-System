@@ -8,4 +8,5 @@ from realtime_translate_system.services.ai_service import LLMService, EmbeddingS
 from realtime_translate_system.services.meeting_service import MeetingProcessor
 from realtime_translate_system.services.database_service import DatabaseService
 from realtime_translate_system.services.translation_service import TranslationService
+from realtime_translate_system.services.transcript_service import TranscriptService
 

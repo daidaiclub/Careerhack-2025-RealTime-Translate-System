@@ -1,33 +1,40 @@
 import os
 from realtime_translate_system.extensions import socketio
 from .speech_recongizer import SpeechRecognizer
-from .translation_service import TranslationService
-from .term_matcher import TermMatcher
+from .transcript_service import TranscriptService
+from .meeting_service import MeetingProcessor
 
 
 class AudioService:
     def __init__(
         self,
         upload_folder,
-        recognizer,
-        translation_service,
-        term_matcher,
+        recognizer: SpeechRecognizer,
+        transcript_service: TranscriptService,
+        meeting_processor: MeetingProcessor,
     ):
         self.upload_folder = upload_folder
         self.recognizer: SpeechRecognizer = recognizer
-        self.translation_service: TranslationService = translation_service
-        self.term_matcher: TermMatcher = term_matcher
+        self.transcript_service: TranscriptService = transcript_service
+        self.meeting_processor: MeetingProcessor = meeting_processor
+
+        self.transcript_text = ""
 
     def process_audio(self, filename):
         filepath = os.path.join(self.upload_folder, filename)
 
         def callback(text):
-            if text.strip() == "":
-                return
-            text = self.translation_service.translate(text)
-            multilingual_text = self.term_matcher.process_multilingual_text(text)
-            data = {"status": "continue", "text": multilingual_text}
-            socketio.emit("transcript", data, namespace="/audio_stream")
+            data = self.transcript_service.process(text)
+            if data is not None:
+                self.transcript_text += data["Traditional Chinese"]["value"]
+                socketio.emit("transcript", data, namespace="/audio_stream")
 
         self.recognizer.transcribe(filepath, callback)
-        socketio.emit("transcript", {"status": "complete"}, namespace="/audio_stream")
+        title, keywords = self.meeting_processor.gen_title_keywords(
+            self.transcript_text
+        )
+        socketio.emit(
+            "transcript",
+            {"status": "complete", "title": title, "keywords": keywords},
+            namespace="/audio_stream",
+        )

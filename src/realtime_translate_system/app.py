@@ -9,7 +9,10 @@ from realtime_translate_system.config import config
 from realtime_translate_system.container import Container
 from realtime_translate_system.extensions import socketio
 from realtime_translate_system.models import db
-from realtime_translate_system.sockets import register_audio_sockets, register_chat_socket
+from realtime_translate_system.sockets import (
+    register_audio_sockets,
+    register_chat_socket,
+)
 
 
 def create_app() -> Flask:
@@ -26,17 +29,21 @@ def create_app() -> Flask:
     container.config.from_dict(app.config)
     app.container = container
 
-    vertexai.init(project=container.config.PROJECT_ID(), location=container.config.LOCATION())
+    vertexai.init(
+        project=container.config.PROJECT_ID(), location=container.config.LOCATION()
+    )
 
     db.init_app(app)
     with app.app_context():
         db.create_all()
     init_blueprints(app)
     register_audio_sockets(
-        app, container.recognizer, container.translation_service, container.term_matcher
+        app,
+        container.recognizer,
+        container.transcript_service,
+        container.meeting_processor,
     )
     register_chat_socket(app, container.meeting_processor)
-
 
     return app
 
