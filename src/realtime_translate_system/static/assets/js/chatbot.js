@@ -12,15 +12,10 @@ export function chat(val) {
   });
   chatSocket.once("bot_message", (data) => {
     loadingMessage.remove(); // 移除「AI 思考中...」
+    console.log(data);
     addChatMessage(data["message"], "ai"); // 顯示 AI 回應
   });
 }
-
-chatSocket.on("bot_message", (data) => {
-  // 收到 AI 回傳的訊息後，將訊息加入畫面
-  console.log(data);
-  addChatMessage(data["message"], "ai");
-});
 
 function addRetrivalMessage(messages) {
   const $container = $(`
@@ -53,7 +48,7 @@ function addRetrivalMessage(messages) {
 function addSummarizationMessage(message) {
   // 讓 **粗體** 文字的前面加上換行
   const formattedMessage = message
-    .replace(/\*\*(.*?)\*\*/g, "<br><strong>$1</strong>") // 替換 **粗體** 為 <strong> 並在前面加 <br>
+    .replace(/\*\*(.*?)\*\*/g, "<br><br><strong>$1</strong>") // 替換 **粗體** 為 <strong> 並在前面加 <br>
     .replace(/(<br>)+/g, "<br>"); // 避免多個 <br> 連續出現
 
   return $(`
