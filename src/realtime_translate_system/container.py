@@ -3,6 +3,7 @@ from realtime_translate_system.extensions import socketio
 from realtime_translate_system.services import (
     AudioService,
     GoogleSpeechRecognizer,
+    WhisperSpeechRecognizer,
     TranslationService,
     TermMatcher,
     LLMService, EmbeddingService,
@@ -38,8 +39,6 @@ class Container(containers.DeclarativeContainer):
         term_matcher=term_matcher,
     )
     
-    vertexai.init(project=config.PROJECT_ID, location=config.LOCATION)
-
     llm_service_pro = providers.Factory(LLMService, model_name="gemini-1.5-pro-002")
     llm_service_flash = providers.Factory(LLMService, model_name="gemini-1.5-flash-002")
     embedding_service = providers.Singleton(EmbeddingService, model_name="text-multilingual-embedding-002")

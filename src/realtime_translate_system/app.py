@@ -3,6 +3,7 @@
 import os
 from flask import Flask
 from flask_cors import CORS
+import vertexai
 from realtime_translate_system.blueprints import init_blueprints
 from realtime_translate_system.config import config
 from realtime_translate_system.container import Container
@@ -24,6 +25,8 @@ def create_app() -> Flask:
     container = Container()
     container.config.from_dict(app.config)
     app.container = container
+
+    vertexai.init(project=container.config.PROJECT_ID, location=container.config.LOCATION)
 
     db.init_app(app)
     with app.app_context():
