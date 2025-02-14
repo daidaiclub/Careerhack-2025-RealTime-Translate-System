@@ -25,7 +25,11 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
 
     def transcribe(self, audio_path: str, callback: Callable[[str], None]):
         """Transcribe a single audio file"""
-        result = self.model.transcribe(audio_path)
+        audio = whisper.load_audio(audio_path)
+        # audio = whisper.pad_or_trim(audio)
+        result = self.model.transcribe(audio, fp16=torch.cuda.is_available(), initial_prompt="""
+        這是一段包含繁體中文、英語、日本語、德語的語音內容。請正確辨識所有語言並將其轉錄成文字，翻譯成中文。          
+""")
         callback(result["text"])
 
     def transcribe_streaming(
@@ -70,3 +74,17 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
             if exit_flag:
                 break
         done()  # Notify processing is done
+
+if __name__ == "__main__":
+    from pathlib import Path
+    recognizer = WhisperSpeechRecognizer()
+
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+    # audio_path = BASE_DIR / "dataset" / "training.wav"
+    audio_path = BASE_DIR / "Testing.wav"
+
+    print(audio_path)
+    def callback(text):
+        print(text)
+
+    recognizer.transcribe(audio_path, callback)
