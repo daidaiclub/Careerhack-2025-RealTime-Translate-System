@@ -11,5 +11,4 @@ def register_audio_sockets(app: Flask, recognizer, transcript_service, meeting_p
 
 def register_chat_socket(app: Flask, meeting_processor):
     socketio = app.container.socketio()
-    socketio.init_app(app)
     chat_init_socketio(socketio, meeting_processor())
