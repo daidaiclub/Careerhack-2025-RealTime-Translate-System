@@ -14,6 +14,7 @@
   <div class="container-fluid">
     <div class="row">
       <!-- Sidebar -->
+      <button id="test">TEST</button>
       <div class="sidebar">
         <span class="navbar-brand">會議記錄系統</span>
         <ul class="list-unstyled" id="doc-list">
@@ -91,6 +92,20 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="assets/js/main.js"></script>
+  <script>
+    $("#test").click(() => {
+      $.ajax({
+        url: "http://127.0.0.1:5000/api/doc/test",
+        type: "GET",
+        success: (res) => {
+          console.log(res);
+        },
+        error: (err) => {
+          console.log(err);
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>

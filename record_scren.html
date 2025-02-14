@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen and Audio Recorder</title>
+</head>
+
+<body>
+    <h2>Record Screen and Audio</h2>
+    <button id="start">Start Recording</button>
+    <button id="stop" disabled>Stop Recording</button>
+    <video id="video" controls></video>
+    <audio id="audio" controls></audio>
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        document.getElementById('start').addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true
+                });
+
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) recordedChunks.push(event.data);
+                };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('video').src = url;
+
+                    // 提取音訊並播放
+                    const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('audio').src = audioUrl;
+
+                    const a = document.createElement('a');
+                    a.href = audioUrl;
+                    a.download = 'audio_only.webm'; // 設定下載音訊的檔名
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    recordedChunks = [];
+                };
+
+
+                mediaRecorder.start();
+                document.getElementById('start').disabled = true;
+                document.getElementById('stop').disabled = false;
+            } catch (err) {
+                console.error('Error accessing display media:', err);
+            }
+        });
+
+        document.getElementById('stop').addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+                document.getElementById('start').disabled = false;
+                document.getElementById('stop').disabled = true;
+            }
+        });
+    </script>
+</body>
+
+</html>

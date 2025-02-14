@@ -10,12 +10,12 @@ doc_bp = Blueprint("doc", __name__)
 def get_doeityocs():
     print("🔹 測試插入會議記錄...")
     current_app.container.database_service().insert_meeting(
-        title="AI 發展趨勢",
-        transcript_chinese="人工智能正在快速發展，對各行各業產生深遠影響。",
-        transcript_english="Artificial intelligence is rapidly evolving and has a profound impact on various industries.",
-        transcript_german="Künstliche Intelligenz entwickelt sich rasant und hat tiefgreifende Auswirkungen auf verschiedene Branchen.",
-        transcript_japanese="人工知能は急速に進化しており、さまざまな業界に深い影響を与えています。",
-        keywords=["AI", "Machine Learning", "科技"],
+        title="區塊鏈與金融科技",
+        transcript_chinese="區塊鏈技術已被廣泛應用於金融科技領域。",
+        transcript_english="Blockchain technology has been widely applied in the fintech industry.",
+        transcript_german="Blockchain-Technologie wird in der Fintech-Branche weit verbreitet eingesetzt.",
+        transcript_japanese="ブロックチェーン技術はフィンテック業界で広く活用されています。",
+        keywords=["Blockchain", "Fintech", "金融科技"],
     )
     print("🔹 測試插入會議記錄完成")
 
@@ -92,7 +92,8 @@ def update_doc():
     transcript_english = data.get("transcript_english")
     transcript_german = data.get("transcript_german")
     transcript_japanese = data.get("transcript_japanese")
-    updated_at = datetime.now()
+
+    _, keywords = current_app.container.meeting_processor.gen_title_keywords(transcript_chinese)
 
     if not doc_id:
         return jsonify({"error": "Missing doc id"}), 400
@@ -100,14 +101,16 @@ def update_doc():
     doc = Doc.query.get(doc_id)
     if not doc:
         return jsonify({"error": "Doc not found"}), 404
-
-    doc.title = title
-    doc.transcript_chinese = transcript_chinese
-    doc.transcript_english = transcript_english
-    doc.transcript_german = transcript_german
-    doc.transcript_japanese = transcript_japanese
-    doc.updated_at = updated_at
-    db.session.commit()
+    
+    current_app.container.database_service().update_meeting(
+        doc_id=doc_id,
+        title=title,
+        transcript_chinese=transcript_chinese,
+        transcript_english=transcript_english,
+        transcript_german=transcript_german,
+        transcript_japanese=transcript_japanese,
+        keywords=keywords,
+    )
 
     return jsonify({"status": "ok"})
 
