@@ -51,11 +51,16 @@ function addRetrivalMessage(messages) {
 
 
 function addSummarizationMessage(message) {
+  // 讓 **粗體** 文字的前面加上換行
+  const formattedMessage = message
+    .replace(/\*\*(.*?)\*\*/g, "<br><strong>$1</strong>") // 替換 **粗體** 為 <strong> 並在前面加 <br>
+    .replace(/(<br>)+/g, "<br>"); // 避免多個 <br> 連續出現
+
   return $(`
     <div class="message-container ai">
-      <div class="message-ai">${message}</div>
+      <div class="message-ai">${formattedMessage}</div>
     </div>
-  `)
+  `);
 }
 
 function addChatMessage(message, type) {
