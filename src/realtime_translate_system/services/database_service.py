@@ -1,20 +1,10 @@
 import numpy as np
-from typing import List, Dict, Any
+from typing import List
 from realtime_translate_system.services.ai_service import EmbeddingService
 from realtime_translate_system.models.doc import Doc
 from realtime_translate_system.models import db
 from sqlalchemy import text, desc
 from datetime import datetime
-
-# # PostgreSQL 連線設定
-# DB_CONFIG = {
-#     "dbname": "meetings_db",
-#     "user": "postgres",
-#     "password": "postgres",
-#     "host": "127.0.0.1",  # Cloud SQL Proxy 連線
-#     "port": "5433"
-# }
-
 
 class DatabaseService:
     def __init__(self, embedding_service: EmbeddingService):
