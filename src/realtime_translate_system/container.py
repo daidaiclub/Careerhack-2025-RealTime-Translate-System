@@ -13,26 +13,31 @@ from realtime_translate_system.services import (
     DatabaseService,
     TranslationService,
 )
-import vertexai
 
 
 class Container(containers.DeclarativeContainer):
-    """依賴注入容器，管理 Flask 內的服務"""
-
     config = providers.Configuration()
     socketio = providers.Object(socketio)
 
+    # LLM 服務
+    llm_service_pro = providers.Factory(LLMService, model_name="gemini-1.5-pro-002")
+    llm_service_flash = providers.Factory(LLMService, model_name="gemini-1.5-flash-002")
+
+    # 基本服務
     recognizer = providers.Singleton(
         GoogleSpeechRecognizer, location=config.LOCATION, project_id=config.PROJECT_ID
     )
-    translation_service = providers.Singleton(
-        TranslationService, location=config.LOCATION, project_id=config.PROJECT_ID
-    )
+
     term_matcher = providers.Singleton(
         TermMatcher,
         file_paths=config.FILE_PATHS,
         threshold=config.TERM_MATCHER_THRESHOLD,
     )
+
+    translation_service = providers.Singleton(
+        TranslationService, llm_service=llm_service_flash
+    )
+
     transcript_service = providers.Singleton(
         TranscriptService,
         glossary_folder=config.FILE_PATHS,
@@ -40,8 +45,6 @@ class Container(containers.DeclarativeContainer):
         term_matcher=term_matcher,
     )
 
-    llm_service_pro = providers.Factory(LLMService, model_name="gemini-1.5-pro-002")
-    llm_service_flash = providers.Factory(LLMService, model_name="gemini-1.5-flash-002")
     embedding_service = providers.Singleton(
         EmbeddingService, model_name="text-multilingual-embedding-002"
     )
@@ -55,10 +58,6 @@ class Container(containers.DeclarativeContainer):
         llm_service=llm_service_pro,
         db_service=database_service,
         embedding_service=embedding_service,
-    )
-
-    translation_service = providers.Singleton(
-        TranslationService, llm_service=llm_service_flash
     )
 
     audio_service = providers.Factory(
