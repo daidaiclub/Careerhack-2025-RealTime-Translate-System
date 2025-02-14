@@ -59,6 +59,10 @@ class TermMatcher:
         """使用 MeCab 進行日語分詞"""
         return self.mecab.parse(input_text).strip().split()
 
+    # 檢查是否為純英文詞
+    def is_english_word(word):
+        return bool(re.match(r'^[A-Za-z\s]+$', word))
+
     def _match_terms(self, tokens: list, term_dict: dict) -> tuple:
         """模糊比對詞彙，返回匹配的詞與相似度分數"""
         matched_terms = []
@@ -67,7 +71,7 @@ class TermMatcher:
         for token in tokens:
             best_match, best_score, best_desc = None, 0, ""
             for term in term_dict:
-                score = fuzz.ratio(token.lower(), term.lower())
+                score = fuzz.partial_ratio(token.lower(), term.lower())
                 if score >= self.threshold and score > best_score:
                     best_match, best_score, best_desc = term, score, term_dict[term]
 
@@ -89,7 +93,10 @@ class TermMatcher:
                         similarity_scores[token1] >= self.threshold
                         and similarity_scores[token2] >= self.threshold
                     ):
-                        merged_tokens.append(token1 + " " + token2)
+                        if self.is_english_word(token1) and self.is_english_word(token2):
+                            merged_tokens.append(token1 + " " + token2)
+                        else:
+                            merged_tokens.append(token1 + token2)
                         i += 2
                         continue
             merged_tokens.append(tokens[i])
@@ -103,7 +110,7 @@ class TermMatcher:
         for token in tokens:
             best_match, best_score, best_desc = None, 0, ""
             for term in term_dict:
-                score = fuzz.ratio(token.lower(), term.lower())
+                score = fuzz.partial_ratio(token.lower(), term.lower())
                 if score >= self.threshold and score > best_score:
                     best_match, best_score, best_desc = term, score, term_dict[term]
 
@@ -209,9 +216,19 @@ if __name__ == "__main__":
 
     matcher = TermMatcher(Config.FILE_PATHS)
 
-    input_text = """
-    大家好，今天要討論的是關於DDR Ratio的問題，在 DP上發現這週的ratio很高，請問MARTIN是否知道發生原因 ?
-    """
+    input_text = '''大家好，今天要討論的是關於DDR Ratio的問題，在 DP上發現這週的ratio很高，請問MARTIN是否知道發生原因 ?
+很抱歉我昨天值大夜班，有把事情交接給LISA了，可以請他說明原因。
+關於這周DDR ratio過高的原因可能是EC被動過的原因，我回去和母版比對後發現溫度等數值都不太一樣。
+為什麼EC會被更改過，數值不是應該和母版對齊嗎? IT能不能查一下系統的log，確認做change的人是誰?
+可以，我回去撈一下資料。
+另外，IT能否也將做change的資料上架到DP，當有人做了不符合權限的事情可以印出資料，並自動寄送alert信件給相關人員。
+好的，這件事技術上沒問題，但我需要回去和我老闆討論一下，因為這屬於架構上的change，我這邊需要新增cloud function來抓log的資料，BigQuery那邊也需要新增table欄位才行。
+好，那請你下次再update這件事給我。另外EC被動過這件事也請Martin追一下發生原因，也請你下次update給我，謝謝。
+好的，我這邊會持續追蹤這件事。
+好了今天的會議就開到這邊，謝謝大家。
+謝謝。
+謝謝。
+掰掰。''' 
 
     merged_tokens, final_matched, annotated_text = matcher.process_text(
         input_text, "Traditional Chinese"
