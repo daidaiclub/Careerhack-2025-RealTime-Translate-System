@@ -174,7 +174,7 @@ class MeetingProcessor:
         generation_config = {
             "candidate_count": 1,
             "max_output_tokens": 1000,
-            "temperature": 0.5,
+            "temperature": 0.8,
             "top_p": 0.9,
             "top_k": 40,
         }
