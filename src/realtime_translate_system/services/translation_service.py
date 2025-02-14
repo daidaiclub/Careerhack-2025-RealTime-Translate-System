@@ -11,7 +11,7 @@ class TranslationService:
         self.generation_config = {
             "candidate_count": 1,
             "max_output_tokens": 1000,
-            "temperature": 0.3,
+            "temperature": 0.2,
             "top_p": 0.8,
             "top_k": 5,
         }
@@ -46,9 +46,24 @@ class TranslationService:
             - The input sentence will always be in one of the following languages: Traditional Chinese, English, German, or Japanese.
             - If the input language is not among these four, **return the original sentence without translation or modification**.
 
-        2. **Handling of Proper Nouns**
-            - Please refer to the following proper noun dictionary to ensure the correct usage of terms during translation:
+        2. **Handling of Term Dictionary (STRICTLY FOLLOW THE DICTIONARY)**    
+            Step 1:
+            - You MUST strictly refer to the Term Dictionary to ensure the correct usage of terms during translation.
+            
+            Step 2:
+            - After completing the translation, **refer to the Term Dictionary**.
+            - If a term from Term Dictionary appears in the translation, **enclose it with `==`**.
+            - **Ensure that terms are correctly translated before marking them.** If a term has a specific translation in a target language, use the correct translation before marking it.
+            - **ONLY** mark words that appear in Term Dictionary with `==`. Do **NOT** assume any other words are in Term Dictionary.
+            
+            **Term Dictionary (STRICTLY FOLLOW THIS LIST):**
             {term_dict}
+            
+            **Example:**
+            - **Original Sentence:** "I worked night shift yesterday."
+            - **Step 1 :** "我昨天上大夜班。"  
+            - **Step 2 :** "我昨天上==大夜班==。"
+
 
         3. **To ensure contextual consistency, here is the translation of the previous sentence for reference**
             {previous_translation_text}
@@ -70,8 +85,9 @@ class TranslationService:
         ### Examples:
         1. Input Sentence: "這是一個測試。"  
         
+        Output: 
         ```json
-        Output: {{
+        {{
             "zh": "這是一個測試。",
             "en": "This is a test.",
             "de": "Das ist ein Test.",
@@ -81,8 +97,9 @@ class TranslationService:
         
         2. Input Sentence: "Gestern hatten wir ein wichtiges Meeting über KI-Technologien."  
         
+        Output: 
         ```json
-        Output: {{
+        {{
             "zh": "昨天我們有一場重要的關於人工智慧技術的會議。",
             "en": "Yesterday we had an important meeting about AI technologies.",
             "de": "Gestern hatten wir ein wichtiges Meeting über KI-Technologien.",
@@ -118,15 +135,50 @@ class TranslationService:
             "jp": glossaries_path + "/ja-JP.csv"
         }
 
-        dfs = {lang: pd.read_csv(path) for lang, path in paths.items()}
+        katakana_dict = {
+            "DDR Ratio": "ディーディーアール レシオ",
+            "EC": "イルシ",
+            "ECS": "イルシエス",
+            "ECCP": "イルシシーピー",
+            "ECN": "イルシエヌ",
+            "Emergency stop": "エマージェンシー ストップ",
+            "Alignment mark": "アライメント マーク",
+            "ALP": "エーエルピー",
+            "STB": "エスティービー",
+            "STK": "エスティーケー",
+            "Route": "ルート",
+            "Scrap": "スクラップ",
+            "Sorter": "ソーター",
+            "Split": "スプリット",
+            "夜勤": "ヤキン",
+            "準夜勤": "ジュンヤキン",
+            "日勤": "ニッキン",
+            "マスク": "マスク",
+            "DP": "ディーピー",
+            "SGP": "エスジーピー",
+            "ETP": "イーティーピー",
+            "Cloud Run": "クラウド ラン",
+            "Cloud Function": "クラウド ファンクション",
+            "BigQuery": "ビッグクエリ",
+            "Pub/Sub": "パブサブ",
+            "Cloud SQL": "クラウド エスキューエル",
+            "Artifact Registry": "アーティファクト レジストリ",
+            "Cloud Storage": "クラウド ストレージ",
+            "GKE": "ジーケーイー",
+            "Vertex AI": "バーテックス エーアイ"
+            }
 
-        return "\n".join([
+
+        dfs = {lang: pd.read_csv(path) for lang, path in paths.items()}
+        
+        formatted_term_dict = "\n".join([
             f"- {dfs['en'].iloc[i]['Proper Noun ']}: {dfs['zh'].iloc[i]['Proper Noun ']} (繁體中文), "
             f"{dfs['en'].iloc[i]['Proper Noun ']} (英文), {dfs['de'].iloc[i]['Proper Noun ']} (德文), "
-            f"{dfs['jp'].iloc[i]['Proper Noun ']} (日文)"
+            f"{dfs['jp'].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs['jp'].iloc[i]['Proper Noun '], dfs['jp'].iloc[i]['Proper Noun '])} (日文)"
             for i in range(len(dfs['en']))
         ])
-
+        
+        return formatted_term_dict
 
 if __name__ == "__main__":
     transcripts = """
