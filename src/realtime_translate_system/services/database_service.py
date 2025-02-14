@@ -4,100 +4,193 @@ from vertexai.language_models import TextEmbeddingModel
 import ast
 from typing import List, Dict, Any
 from realtime_translate_system.services.ai_service import  EmbeddingService
+from realtime_translate_system.models.doc import Doc
+from realtime_translate_system.models import db
+from sqlalchemy import text
+from datetime import datetime
 
-# PostgreSQL 連線設定
-DB_CONFIG = {
-    "dbname": "meetings_db",
-    "user": "postgres",
-    "password": "postgres",
-    "host": "127.0.0.1",  # Cloud SQL Proxy 連線
-    "port": "5433"
-}
-
-class Document:
-    def __init__(self, doc_id, title, created_at, update_time, content, embedding, keywords, similarity=None):
-        self.id = doc_id
-        self.title = title
-        self.created_at = created_at
-        self.update_time = update_time
-        self.content = content
-        self.embedding = embedding
-        self.keywords = keywords
-        self.similarity = similarity
-    
-    def __str__(self):
-        return f"Document(id={self.id}, title={self.title}, created_at={self.created_at}, update_time={self.update_time}, content={self.content[:50]}..., keywords={self.keywords}, similarity={self.similarity}), embedding={self.embedding[:10]}..."
-
+# # PostgreSQL 連線設定
+# DB_CONFIG = {
+#     "dbname": "meetings_db",
+#     "user": "postgres",
+#     "password": "postgres",
+#     "host": "127.0.0.1",  # Cloud SQL Proxy 連線
+#     "port": "5433"
+# }
 
 class DatabaseService:
     def __init__(self, embedding_service: EmbeddingService):
-        """初始化資料庫連線"""
-        self.conn = psycopg2.connect(**DB_CONFIG)
         self.embedding_service = embedding_service
-        self.cur = self.conn.cursor()
-    
-    def __del__(self):
-        """物件被銷毀時關閉連線"""
-        self.cur.close()
-        self.conn.close()
-    
+
     def get_text_embedding(self, text: str) -> np.ndarray:
         """使用 Google Vertex AI 取得文本的嵌入向量 (768 維)"""
         return np.array(self.embedding_service.get_embedding(text))
     
-    def get_meetings(self) -> List[Document]:
+    def insert_meeting(self, title: str, transcript_chinese: str, transcript_english: str,
+                         transcript_german: str, transcript_japanese: str, keywords: list):
+        """插入新的會議記錄"""
+        try:
+        
+            embedding_array = self.get_text_embedding(transcript_chinese)
+            embedding_list = embedding_array.tolist()  #  轉換為 Python List，才能存入 SQLAlchemy
+
+            # 🔹 **SQL 插入語句**
+            sql = text("""
+                INSERT INTO documents (
+                    title, created_at, update_time, transcript_chinese, transcript_english, 
+                    transcript_german, transcript_japanese, embedding, keywords
+                ) VALUES (
+                    :title, :created_at, :update_time, :transcript_chinese, :transcript_english,
+                    :transcript_german, :transcript_japanese, :embedding, :keywords
+                ) RETURNING id;
+            """)
+
+            # 🔹 **執行 SQL 插入**
+            result = db.session.execute(sql, {
+                "title": title,
+                "created_at": datetime.now(),
+                "update_time": datetime.now(),
+                "transcript_chinese": transcript_chinese,
+                "transcript_english": transcript_english,
+                "transcript_german": transcript_german,
+                "transcript_japanese": transcript_japanese,
+                "embedding": embedding_list,
+                "keywords": keywords
+            })
+
+            db.session.commit()
+
+            new_id = result.fetchone()[0]  # 取得新插入的 ID
+            print(f" 嵌入向量成功插入！ID: {new_id}")
+            return new_id  # 返回插入的對象 ID
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ 插入失敗: {e}")
+            return None
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"插入失敗: {e}")
+            return None
+        
+    def get_meeting(self, doc_id: int) -> Doc:
+        """獲取 `documents` 表中的一筆資料，並返回字典包含內容與 `type()`"""
+        try:
+            meeting = db.session.query(Doc).filter_by(id=doc_id).first()
+            
+            if meeting:
+                # meeting_data = {}
+                # print("📄 會議記錄內容：")
+                # for column in Doc.__table__.columns:
+                #     value = getattr(meeting, column.name)
+                #     meeting_data[column.name] = {"value": value, "type": type(value).__name__}
+                #     print(f"{column.name}: {value} (type: {type(value).__name__})")
+                return meeting
+            else:
+                print("沒有找到任何會議記錄。")
+                return None
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"❌ 查詢失敗: {e}")
+            return None
+    
+    def get_meetings(self) -> List[Doc]:
         """獲取所有會議記錄"""
+        # try:
+        #     self.cur.execute("SELECT id, title, created_at, update_time, content, embedding, keywords FROM Docs;")
+        #     rows = self.cur.fetchall()
+        #     return [Doc(row[0], row[1], row[2], row[3], row[4], row[5], row[6]) for row in rows]
+        # except Exception as e:
+        #     print(f"查詢失敗: {e}")
+        #     return []
         try:
-            self.cur.execute("SELECT id, title, created_at, update_time, content, embedding, keywords FROM documents;")
-            rows = self.cur.fetchall()
-            return [Document(row[0], row[1], row[2], row[3], row[4], row[5], row[6]) for row in rows]
+            return Doc.query.all()
         except Exception as e:
-            print(f"❌ 查詢失敗: {e}")
+            print(f"查詢失敗: {e}")
             return []
 
-    def search_meetings(self, query_embedding: List[float], top_k: int = 5) -> List[Document]:
+    def search_meetings(self, query_embedding: List[float], top_k: int = 5) -> List[Doc]:
         """透過關鍵字搜尋會議記錄，返回 `top_k` 筆結果，並包含所有欄位"""
+        # try:
+        #     self.cur.execute("""
+        #         SELECT id, title, created_at, update_time, content, embedding, keywords, embedding <=> %s::vector(768) AS similarity
+        #         FROM Docs
+        #         ORDER BY similarity ASC
+        #         LIMIT %s;
+        #     """, (query_embedding, top_k))
+        #     rows = self.cur.fetchall()
+        #     return [Doc(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]) for row in rows]
+        # except Exception as e:
+        #     print(f"查詢失敗: {e}")
+        #     return []
+        # 🔹 修正 SQL 查詢，移除 `content` 並確保 `similarity` 排序
         try:
-            self.cur.execute("""
-                SELECT id, title, created_at, update_time, content, embedding, keywords, embedding <=> %s::vector(768) AS similarity
+            sql = text("""
+                SELECT id, title, created_at, update_time, transcript_chinese, transcript_english, 
+                        transcript_german, transcript_japanese, embedding, keywords
                 FROM documents
-                ORDER BY similarity ASC
-                LIMIT %s;
-            """, (query_embedding, top_k))
-            rows = self.cur.fetchall()
-            return [Document(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]) for row in rows]
+                ORDER BY embedding <=> (:query_embedding)::vector(768) ASC
+                LIMIT :top_k;
+            """)
+
+            # 🔹 執行查詢
+            result = db.session.execute(sql, {
+                "query_embedding": query_embedding,
+                "top_k": top_k
+            }).mappings().all()
+
+
+            # #  檢查是否有結果
+            # if not result:
+            #     print("⚠️ 沒有找到符合的會議記錄")
+            #     return []
+
+            # #  輸出每一筆查詢結果
+            # print("📌 會議記錄查詢結果：")
+            # for i, row in enumerate(result):
+            #     print(f"\n🔹 會議 {i + 1}:")
+            #     for key, value in row.items():
+            #         print(f"  {key}: {value} (type: {type(value).__name__})")
+
+
+            return [Doc(**row) for row in result]
+
+
         except Exception as e:
             print(f"❌ 查詢失敗: {e}")
+            db.session.rollback()
             return []
 
-    def save_meeting(self, title: str, transcript: str, keywords: List[str]):
-        """儲存新的會議記錄，created_at 自動設定"""
-        try:
-            embedding_array = self.get_text_embedding(transcript)
-            embedding_list = embedding_array.tolist()
-            self.cur.execute("""
-                INSERT INTO documents (title, content, embedding, keywords)
-                VALUES (%s, %s, %s, %s);
-            """, (title, transcript, embedding_list, keywords))
-            self.conn.commit()
-            print("✅ 成功儲存會議記錄！")
-        except Exception as e:
-            print(f"❌ 儲存失敗: {e}")
-
-    def update_meeting(self, doc_id: int, title: str, transcript: str, keywords: List[str]):
+    def update_meeting(self, doc_id: int, title: str, transcript_chinese: str, transcript_english: str,
+                       transcript_german: str, transcript_japanese: str, keywords: list):
         """更新會議記錄，並自動更新 update_time"""
         try:
-            embedding_array = self.get_text_embedding(transcript)
-            embedding_list = embedding_array.tolist()
-            self.cur.execute("""
-                UPDATE documents
-                SET title = %s, content = %s, embedding = %s, keywords = %s, update_time = NOW()
-                WHERE id = %s;
-            """, (title, transcript, embedding_list, keywords, doc_id))
-            self.conn.commit()
-            print("✅ 成功更新會議記錄！")
+            doc = db.session.query(Doc).filter_by(id=doc_id).first()
+            
+            if not doc:
+                print(f"更新失敗 找不到 ID {doc_id} 的記錄")
+                return False
+
+            doc.title = title
+            doc.transcript_chinese = transcript_chinese
+            doc.transcript_english = transcript_english
+            doc.transcript_german = transcript_german
+            doc.transcript_japanese = transcript_japanese
+            doc.keywords = keywords
+            doc.embedding = self.get_text_embedding(transcript_chinese).tolist()
+            doc.update_time = datetime.now()
+
+            db.session.commit()
+            print(f"成功更新 ID {doc_id} 的會議記錄")
+            return True
+
         except Exception as e:
-            print(f"❌ 更新失敗: {e}")
+            db.session.rollback()
+            print(f"更新失敗 {e}")
+            return False
+
 
 
 
@@ -115,12 +208,12 @@ if __name__ == "__main__":
     # print("🔹 測試 update_meeting")
     # db_service.update_meeting(1, "更新後的會議1", "這是更新後的內容", ["AI", "數據"])
     
-    print("🔹 測試 search_meetings")
-    query_embedding = "全球暖化"
-    query_embedding = db_service.get_text_embedding(query_embedding)
-    results = db_service.search_meetings(query_embedding.tolist(), top_k=3)
-    for result in results:
-        print(result)
+    # print("🔹 測試 search_meetings")
+    # query_embedding = "全球暖化"
+    # query_embedding = db_service.get_text_embedding(query_embedding)
+    # results = db_service.search_meetings(query_embedding.tolist(), top_k=3)
+    # for result in results:
+    #     print(result)
     
 
 
@@ -137,8 +230,8 @@ if __name__ == "__main__":
 # insert_embedding(text_input)
 
 #查詢所有文檔
-# fetch_all_documents()
+# fetch_all_Docs()
 
 # # 查詢相似文檔
 # query_text = """"""
-# find_top_similar_documents(query_text, top_k=3)
+# find_top_similar_Docs(query_text, top_k=3)

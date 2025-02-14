@@ -70,7 +70,7 @@ class RetrievalAugmentedGeneration:
         
         if search_keywords:
             filtered_meetings = [
-                m for m in filtered_meetings if self.fuzzy_match_keywords(search_keywords, m["keywords"], keyword_threshold)
+                m for m in filtered_meetings if self.fuzzy_match_keywords(search_keywords,  m.keywords, keyword_threshold)
             ]
         
         if filtered_meetings:
@@ -147,12 +147,16 @@ class MeetingProcessor:
 
     def gen_meeting_summarize(self, user_query: str):
         """根據查詢出的會議資訊，生成 RAG Prompt，讓 LLM 完成使用者的需求"""
-        retrieved_meetings = RetrievalAugmentedGeneration.hybrid_search(user_query)
+
+        retrieved_meetings = self.rag_service.hybrid_search(user_query)
         
+        if '找出' in user_query:
+            return retrieved_meetings
+
         meetings_context = "\n\n".join([
-            f"**Meeting Title:** {meeting['title']}\n"
-            f"**Date:** {meeting['date']}\n"
-            f"**Transcript:** {meeting['transcript'][:500]}..."  # 限制最大 500 字
+            f"**Meeting Title:** {meeting.title}\n"
+            f"**Create Date:** {meeting.created_at}\n"
+            f"**Transcript:** {meeting.transcript_chinese}"  # 限制最大 500 字
             for meeting in retrieved_meetings
         ])
 
@@ -173,7 +177,7 @@ class MeetingProcessor:
         
         generation_config = {
             "candidate_count": 1,
-            "max_output_tokens": 1000,
+            "max_output_tokens": 2000,
             "temperature": 0.8,
             "top_p": 0.9,
             "top_k": 40,
@@ -181,4 +185,4 @@ class MeetingProcessor:
         
         response = self.llm_service.query(prompt, generation_config)
         
-        return response.text
+        return response

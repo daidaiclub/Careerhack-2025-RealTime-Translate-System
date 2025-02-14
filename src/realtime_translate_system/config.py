@@ -35,7 +35,20 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = f"sqlite:///{Config.BASE_DIR}/dev.db"
+
+    # PostgreSQL 連線設定
+    DB_CONFIG = {
+        "dbname": "meetings_db",
+        "user": "postgres",
+        "password": "postgres",
+        "host": "127.0.0.1",  # Cloud SQL Proxy 連線
+        "port": "5433"
+    }
+
+    SQLALCHEMY_DATABASE_URI = (
+        f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
+        f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
+    )
 
 
 class TestingConfig(Config):
