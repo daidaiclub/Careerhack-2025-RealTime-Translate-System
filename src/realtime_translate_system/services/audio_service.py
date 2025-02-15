@@ -4,7 +4,10 @@ from realtime_translate_system.config import Language
 from .speech_recongizer import SpeechRecognizer
 from .transcript_service import TranscriptService
 from .meeting_service import MeetingProcessor
-
+import noisereduce as nr
+import numpy as np
+import librosa
+import soundfile as sf
 
 class AudioService:
     def __init__(
@@ -39,3 +42,31 @@ class AudioService:
             {"status": "complete", "title": title, "keywords": keywords},
             namespace="/audio_stream",
         )
+
+    def noise_reduction_stream(self, audio: np.ndarray, sr: int, prop_decrease: float = 0.8) -> np.ndarray:
+        """
+        使用 noisereduce 進行語音降噪。
+
+        :param audio: 輸入音訊 (np.ndarray, 1D)
+        :param sr: 取樣率 (Hz)
+        :param prop_decrease: 降噪強度 (0~1, 越高降噪越強)
+        :return: 降噪後的音訊 (np.ndarray, 1D)
+        """
+        return nr.reduce_noise(y=audio, sr=sr, prop_decrease=prop_decrease)
+
+    def noise_reduction_wav(self, input_wav: str, output_wav: str, prop_decrease: float = 0.8):
+        """
+        讀取 WAV 檔案並進行降噪處理。
+
+        :param input_wav: 輸入的音檔路徑
+        :param output_wav: 降噪後的輸出音檔路徑
+        :param prop_decrease: 降噪強度 (0~1)
+        """
+        # 讀取音訊
+        y, sr = librosa.load(input_wav, sr=None)
+
+        # 降噪
+        y_denoised = nr.reduce_noise(y=y, sr=sr, prop_decrease=prop_decrease)
+
+        # 儲存降噪後的音檔
+        sf.write(output_wav, y_denoised, sr)

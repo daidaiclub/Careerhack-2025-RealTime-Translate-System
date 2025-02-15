@@ -5,6 +5,7 @@ import webrtcvad
 import whisper
 from typing import Callable
 from realtime_translate_system.services import SpeechRecognizer
+import noisereduce as nr
 
 
 class WhisperSpeechRecognizer(SpeechRecognizer):
@@ -62,12 +63,15 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
                     break
 
             if len(tmp_audio) < chunk_size * self.frame_rate * self.sample_width:
-                continue
+                continue            
 
             audio = (
                 np.frombuffer(tmp_audio, dtype=np.int16).astype(np.float32) / 32768.0
             )
-            result = self.model.transcribe(audio, fp16=torch.cuda.is_available())
+            
+            denoised_audio = nr.reduce_noise(y=audio, sr=self.frame_rate, prop_decrease=0.8)
+
+            result = self.model.transcribe(denoised_audio, fp16=torch.cuda.is_available())
             text = result["text"].strip()
             callback(text)
             tmp_audio = b""
