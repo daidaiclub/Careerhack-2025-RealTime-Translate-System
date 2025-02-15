@@ -1,6 +1,6 @@
 import { triggerFileUpload, triggerUploadFile } from "./upload.js";
 import { openChatbot, closeChatbot } from "./ui.js";
-import { debouncedInputContent, fetchDocs, deleteDoc, loadDocFromURL, toggleTitleEdit, resetToNewMeeting, triggerLanguageSelect, saveDoc } from "./document.js";
+import { fetchDocs, deleteDoc, loadDocFromURL, toggleTitleEdit, resetToNewMeeting, triggerLanguageSelect, saveDoc } from "./document.js";
 import { chat } from "./chatbot.js";
 import { getDocIdFromURL } from "./utils.js";
 import { triggerMicButton } from "./audio.js";
@@ -36,7 +36,7 @@ $(document).ready(function () {
       chat($("#chat-input").val());
     }
   });
-  $("#transcript_area").on("input", debouncedInputContent);
+  // $("#transcript_area").on("input", debouncedInputContent);
   $("#doc-list").on("click", "li:first", resetToNewMeeting);
   $("#save-btn").on("click", saveDoc);
   $("#mic-btn").click(triggerMicButton);

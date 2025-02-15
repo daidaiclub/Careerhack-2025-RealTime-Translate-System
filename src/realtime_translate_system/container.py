@@ -25,8 +25,12 @@ class Container(containers.DeclarativeContainer):
 
     # 基本服務
     recognizer = providers.Singleton(
-        GoogleSpeechRecognizer, location=config.LOCATION, project_id=config.PROJECT_ID
+        WhisperSpeechRecognizer, model_size="turbo"
     )
+
+    # recognizer = providers.Singleton(
+    #     GoogleSpeechRecognizer, location=config.LOCATION, project_id=config.PROJECT_ID
+    # )
 
     term_matcher = providers.Singleton(
         TermMatcher,

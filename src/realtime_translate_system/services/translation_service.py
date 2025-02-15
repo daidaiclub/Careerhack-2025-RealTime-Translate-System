@@ -1,6 +1,5 @@
 import pandas as pd
 import time
-from vertexai.generative_models import GenerativeModel
 from realtime_translate_system.config import Language
 from realtime_translate_system.services.ai_service import LLMService
 
@@ -12,8 +11,8 @@ class TranslationService:
         self.generation_config = {
             "candidate_count": 1,
             "max_output_tokens": 1000,
-            "temperature": 0.2,
-            "top_p": 0.8,
+            "temperature": 0.6,
+            "top_p": 0.9,
             "top_k": 5,
         }
 

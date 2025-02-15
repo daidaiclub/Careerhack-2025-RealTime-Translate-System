@@ -57,10 +57,18 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", f"sqlite:///{Config.BASE_DIR}/prod.db"
-    )
+    DB_CONFIG = {
+        "dbname": "meetings_db",
+        "user": "postgres",
+        "password": "postgres",
+        "host": "127.0.0.1",  # Cloud SQL Proxy 連線
+        "port": "5433"
+    }
 
+    SQLALCHEMY_DATABASE_URI = (
+        f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@"
+        f"{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
+    )
 
 # 選擇環境
 config = {

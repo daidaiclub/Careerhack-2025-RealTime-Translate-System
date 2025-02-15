@@ -20,7 +20,7 @@ export function triggerUploadFile() {
 
 export function uploadFile(file) {
   var formData = new FormData();
-  formData.append('file', file);
+  formData.append('file', file, 'audio.wav');
 
   FileApi.uploadFile(formData);
 }

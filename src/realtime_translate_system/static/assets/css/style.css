@@ -49,7 +49,7 @@ body {
   padding: 20px;
 }
 
-.editor {
+.editor, .tiptap-editor {
   background-color: #333;
   color: white;
   min-height: calc(100vh - 120px);
@@ -131,6 +131,7 @@ body {
 .form-control:focus,
 .tiptap {
   height: 60px;
+  padding: 20px;
   background-color: #333;
   color: white;
   border: none;
@@ -226,4 +227,23 @@ textarea.form-control,
 
 #open-chatbot:hover {
   background-color: #e0e0e0;
+}
+
+mark {
+  position: relative;
+  cursor: pointer;
+}
+
+mark:hover::after {
+  content: attr(data-d);
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transform: translateY(-4px);
+  z-index: 1000;
 }

@@ -1,12 +1,11 @@
 // assets/js/transcript.js
 import { audioSocket } from "./socket.js";
 import { setUploadIcon } from "./ui.js";
-import { transcriptState } from "./transcriptState.js";
-import { renderTranscripts } from "./renderTranscripts.js";
+import { transcriptState, currentLanguage } from "./transcriptState.js";
+import { insertTranscript } from "./renderTranscripts.js";
 
 function transformFormat(data) {
   const text = data.text
-  console.log(text)
   return {
     status: data.status,
     text: {
@@ -14,6 +13,12 @@ function transformFormat(data) {
       english: text["English"]["value"],
       german: text["German"]["value"],
       japanese: text["Japanese"]["value"]
+    },
+    explains: {
+      chinese: text["Traditional Chinese"]["explains"],
+      english: text["English"]["explains"],
+      german: text["German"]["explains"],
+      japanese: text["Japanese"]["explains"]
     }
   };
 }
@@ -29,19 +34,21 @@ audioSocket.on("transcript", (data) => {
     for (let lang in data.text) {
       transcriptState[lang] += data.text[lang] + "\n";
     }
-    renderTranscripts();
+    // 如果目前顯示的語言有更新，就只在尾端插入新內容
+    console.log(data)
+    insertTranscript(data.text[currentLanguage] + "\n", data.explains[currentLanguage]);
   } else {
     setUploadIcon("default");
   }
 });
 
 /**
- * 串流更新資料同上
+ * 串流更新資料：同上
  */
 audioSocket.on("transcript_stream", (data) => {
   data = transformFormat(data);
   for (let lang in data.text) {
     transcriptState[lang] += data.text[lang] + "\n";
   }
-  renderTranscripts();
+  insertTranscript(data.text[currentLanguage] + "\n", data.explains[currentLanguage]);
 });

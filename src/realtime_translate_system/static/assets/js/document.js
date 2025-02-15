@@ -4,13 +4,13 @@ import { toggleTitleEdit as uiToggleTitleEdit, showGlobalAlert } from "./ui.js";
 import { getDocIdFromURL } from "./utils.js";
 import { debounce } from "./debounce.js";
 import { transcriptState, currentLanguage, setCurrentLanguage, state } from "./transcriptState.js";
-import { renderTranscripts } from "./renderTranscripts.js";
+import { renderTranscriptsFull } from "./renderTranscripts.js";
+import { tiptapEditor } from "./editor.js";
 
 // DOM 參考
 const dom = {
   $meetingTitle: $("#meeting-title"),
   $meetingTitleInput: $("#meeting-title-input"),
-  $transcriptArea: $("#transcript_area"),
   $docList: $("#doc-list")
 };
 
@@ -30,7 +30,7 @@ async function loadDoc(id) {
     transcriptState.japanese = data.transcript_japanese;
     dom.$meetingTitle.text(state.currentTitle);
     // 更新 textarea 內容（以當前選定語言顯示）
-    dom.$transcriptArea.val(transcriptState[currentLanguage]);
+    renderTranscriptsFull();
   } catch (error) {
     throw error;
   }
@@ -55,9 +55,11 @@ export function toggleTitleEdit() {
 /**
  * 當使用者編輯筆記時，將目前 textarea 內容存入 transcriptState，並儲存文件
  */
-export function inputContent() {
-  transcriptState[currentLanguage] = dom.$transcriptArea.val();
-}
+tiptapEditor.on('update', () => {
+  // 可視需求存 HTML 或 text
+  transcriptState[currentLanguage] = tiptapEditor.getHTML();
+});
+
 
 /**
  * 取得文件列表並更新文件清單 UI
@@ -126,7 +128,6 @@ export async function loadDocFromURL() {
 export async function saveDoc() {
   if (state.isSaving) return;
   state.isSaving = true;
-  console.log("Saving doc...");
 
   const payload = {
     title: state.currentTitle,
@@ -147,6 +148,7 @@ export async function saveDoc() {
       const _save_doc = async () => await DocAPI.updateDoc(updatePayload);
       debounce(_save_doc, 500)();
     }
+    showGlobalAlert("文件已儲存", "success");
     fetchDocs();
   } catch (error) {
     console.error(error);
@@ -166,8 +168,8 @@ export function resetToNewMeeting() {
   transcriptState.german = "";
   transcriptState.japanese = "";
   dom.$meetingTitle.text(state.currentTitle);
-  dom.$transcriptArea.val("");
   window.history.pushState({}, "", "/");
+  renderTranscriptsFull();
 }
 
 /**
@@ -186,31 +188,22 @@ export async function deleteDoc(id) {
 }
 
 /**
- * Debounced 版本的 inputContent，延遲 500 毫秒後觸發
- */
-export const debouncedInputContent = debounce(inputContent, 500);
-
-/**
  * 切換語言：
  * 1. 將目前 textarea 內容存回 transcriptState（保留使用者手動修改）
  * 2. 切換 currentLanguage，並更新 textarea 顯示對應語言內容
  */
 export function triggerLanguageSelect(newLang) {
-  // 儲存目前語言的內容
-  transcriptState[currentLanguage] = dom.$transcriptArea.val();
-  // 切換語言
+  // 儲存原語言內容（假設 editor onUpdate 已同步）
   setCurrentLanguage(newLang);
-  // 更新 textarea
-  dom.$transcriptArea.val(transcriptState[newLang]);
+  renderTranscriptsFull();
 
-  // 更新 textarea 的 placeholder
+  // 更新 placeholder（若有設定 editor 的 placeholder，需另行處理）
   const placeholders = {
     chinese: "開啟會議記錄...",
     english: "Start meeting notes...",
     german: "Besprechungsnotizen starten...",
     japanese: "会議記録を開始..."
   };
-  dom.$transcriptArea.attr("placeholder", placeholders[newLang]);
-
-  renderTranscripts();
+  // 例如，若 editor 外層有 placeholder 區塊可同步更新：
+  document.querySelector("#editor").setAttribute("placeholder", placeholders[newLang]);
 }

@@ -31,7 +31,8 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
         result = self.model.transcribe(audio, fp16=torch.cuda.is_available(), initial_prompt="""
         這是一段包含繁體中文、英語、日本語、德語的語音內容。請正確辨識所有語言並將其轉錄成文字，翻譯成中文。          
 """)
-        callback(result["text"])
+        for r in result["segments"]:
+            callback(r["text"])
 
     def transcribe_streaming(
         self,
