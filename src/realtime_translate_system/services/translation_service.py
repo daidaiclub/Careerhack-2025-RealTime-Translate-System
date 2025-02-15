@@ -69,23 +69,20 @@ class TranslationService:
             - The input sentence will always be in one of the following languages: Traditional Chinese, English, German, or Japanese.
             - If the input language is not among these four, **return the original sentence without translation or modification**.
 
-        2. **Handling of Term Dictionary (STRICTLY FOLLOW THE DICTIONARY)**    
-            Step 1:
+        2. **Handling of Term Dictionary (STRICTLY FOLLOW THE DICTIONARY)**
             - You MUST strictly refer to the Term Dictionary to ensure the correct usage of terms during translation.
-            
-            Step 2:
-            - After completing the translation, **refer to the Term Dictionary**.
-            - If a term from Term Dictionary appears in the translation, **enclose it with `==`**.
-            - **Ensure that terms are correctly translated before marking them.** If a term has a specific translation in a target language, use the correct translation before marking it.
-            - **ONLY** mark words that appear in Term Dictionary with `==`. Do **NOT** assume any other words are in Term Dictionary.
-            
+            - If a term from the Term Dictionary appears in the sentence, you **MUST use the exact translation provided in the dictionary**.
+            - **If the original sentence contains an incorrect or non-standard form of a term, correct it to match the proper term in the dictionary before translating.**
+
             **Term Dictionary (STRICTLY FOLLOW THIS LIST):**
             {term_dict}
             
             **Example:**
-            - **Original Sentence:** "I worked night shift yesterday."
-            - **Step 1 :** "我昨天上大夜班。"  
-            - **Step 2 :** "我昨天上==大夜班==。"
+            1. Input Sentence: "I worked night shift yesterday."
+            Output:  "我昨天上大夜班。" 
+            
+            2. Input Sentence: "This device's AlnMark needs to be repositioned."
+            Output:  "這台設備的 Alignment mark 需要重新調整位置。"
 
 
         3. **To ensure contextual consistency, here is the translation of the previous sentence for reference**
@@ -162,15 +159,6 @@ class TranslationService:
             else glossaries_paths
         )
 
-        # fix_maps = {
-        #     "Traditional Chinese": Language.TW,
-        #     "German": Language.DE,
-        #     "English": Language.EN,
-        #     "Japanese": Language.JP,
-        # }
-
-        # paths = {fix_maps[key]: str(value) for key, value in paths.items()}
-
         katakana_dict = {
             "DDR Ratio": "ディーディーアール レシオ",
             "EC": "イルシ",
@@ -205,15 +193,26 @@ class TranslationService:
         }
 
         dfs = {lang: pd.read_csv(path) for lang, path in paths.items()}
+        
+        
+        formatted_term_dict = "\n".join([
+            f"- **{dfs[Language.EN].iloc[i]['Proper Noun ']}**:"
+            f"\n  - zh: {dfs[Language.TW].iloc[i]['Proper Noun ']}, "
+            f"en: {dfs[Language.EN].iloc[i]['Proper Noun ']}, "
+            f"de: {dfs[Language.DE].iloc[i]['Proper Noun ']}, "
+            f"jp: {dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.EN].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])}"
+            f"\n  - **Description**: {dfs[Language.EN].iloc[i]['Description']}"
+            for i in range(len(dfs[Language.EN]))
+        ])
 
-        formatted_term_dict = "\n".join(
-            [
-                f"- {dfs[Language.EN].iloc[i]['Proper Noun ']}: {dfs[Language.TW].iloc[i]['Proper Noun ']} (繁體中文), "
-                f"{dfs[Language.EN].iloc[i]['Proper Noun ']} (英文), {dfs[Language.DE].iloc[i]['Proper Noun ']} (德文), "
-                f"{dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.JP].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])} (日文)"
-                for i in range(len(dfs[Language.EN]))
-            ]
-        )
+        # formatted_term_dict = "\n".join(
+        #     [
+        #         f"- {dfs[Language.EN].iloc[i]['Proper Noun ']}: {dfs[Language.TW].iloc[i]['Proper Noun ']} (繁體中文), "
+        #         f"{dfs[Language.EN].iloc[i]['Proper Noun ']} (英文), {dfs[Language.DE].iloc[i]['Proper Noun ']} (德文), "
+        #         f"{dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.JP].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])} (日文)"
+        #         for i in range(len(dfs[Language.EN]))
+        #     ]
+        # )
 
         return formatted_term_dict
 
