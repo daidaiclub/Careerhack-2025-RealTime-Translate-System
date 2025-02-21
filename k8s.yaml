@@ -17,20 +17,25 @@ spec:
       - name: realtime-translate-system
         image: jimmyhealer/realtime-translate-system:latest
         ports:
-        - containerPort: 5000
+          - containerPort: 5000
         env:
-        - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: "/app/grp-secret.json"
-        - name: GOOGLE_CLOUD_PROJECT
-          value: "tsmccareerhack2025-icsd-grp1"
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: "/app/grp-secret.json"
+          - name: GOOGLE_CLOUD_PROJECT
+            value: "tsmccareerhack2025-icsd-grp1"
+          - name: FLASK_ENV
+            value: "development"
         volumeMounts:
-        - name: grp-secret
-          mountPath: /app/grp-secret.json
-          subPath: grp-secret.json
+          - name: grp-secret
+            mountPath: /app/grp-secret.json
+            subPath: grp-secret.json
       volumes:
-      - name: grp-secret
-        secret:
-          secretName: grp-secret
+        - name: grp-secret
+          secret:
+            secretName: grp-secret
+        - name: sqlproxy-creds
+          secret:
+            secretName: cloud-sql-proxy-creds
 ---
 apiVersion: v1
 kind: Service

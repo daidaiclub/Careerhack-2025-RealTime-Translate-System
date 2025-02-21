@@ -5,7 +5,7 @@ ENV PIP_NO_CACHE_DIR=1 \
     PYTHONOPTIMIZE=1
 
 RUN apt-get update && apt-get install -y \
-    portaudio19-dev cmake pkg-config && \
+    portaudio19-dev cmake pkg-config git && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
