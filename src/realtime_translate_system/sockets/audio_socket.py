@@ -2,27 +2,27 @@ from flask_socketio import SocketIO, Namespace
 import threading
 import queue
 from realtime_translate_system.config import Language
-from realtime_translate_system.services import (
-    SpeechRecognizer,
-    TranscriptService,
-    MeetingProcessor,
-)
-
+from realtime_translate_system.services.speech import Speech2TextService
+from realtime_translate_system.services.translation import TranslationService
+from realtime_translate_system.services.document import DocService
+from realtime_translate_system.services.glossary import GlossaryService
 
 class AudioNamespace(Namespace):
     def __init__(
         self,
         namespace,
         socketio: SocketIO,
-        recognizer: SpeechRecognizer,
-        transcript_service: TranscriptService,
-        meeting_processor: MeetingProcessor,
+        speech2text_service: Speech2TextService,
+        translation_service: TranslationService,
+        document_service: DocService,
+        glossary_service: GlossaryService
     ):
         super().__init__(namespace)
         self.socketio = socketio
-        self.recognizer = recognizer
-        self.transcript_service = transcript_service
-        self.meeting_processor = meeting_processor
+        self.speech2text_service = speech2text_service
+        self.translation_service = translation_service
+        self.document_service = document_service
+        self.glossary_service = glossary_service
         self.audio_task = None
         self.audio_queue = queue.Queue()
         self.thread_lock = threading.Lock()
@@ -36,15 +36,23 @@ class AudioNamespace(Namespace):
         try:
 
             def callback(text: str):
-                data = self.transcript_service.process(text)
-                if data is not None:
-                    self.transcript_text += data["text"][Language.TW]["value"]
-                    self.emit("transcript_stream", data)
+                previous_translation = None
+                glossaries_paths = None
+                term_dict = self.glossary_service.load_term_dict(glossaries_paths)
+                
+                translated_text = self.translation_service.translate(content=text, previous_translation=previous_translation, term_dict=term_dict)
+                
+                processed_text  = self.glossary_service.process_multilingual_text(translated_text)
+                response_payload = {"status": "continue", "text": processed_text}
+                
+                if response_payload is not None:
+                    self.transcript_text += response_payload["text"][Language.TW]["value"]
+                    self.emit("transcript_stream", response_payload)
 
             def done():
                 # generator title and keywords
                 self.audio_task = None
-                title, keywords = self.meeting_processor.gen_title_keywords(
+                title, keywords = self.document_service.gen_title_keywords(
                     self.transcript_text
                 )
                 data = {"status": "complete", "title": title, "keywords": keywords}
@@ -56,7 +64,7 @@ class AudioNamespace(Namespace):
                         self.audio_queue.get_nowait()
 
                     self.audio_task = self.socketio.start_background_task(
-                        self.recognizer.transcribe_streaming,
+                        self.speech2text_service.transcribe_streaming,
                         self.audio_queue,
                         callback,
                         done,
@@ -69,10 +77,10 @@ class AudioNamespace(Namespace):
 
 def init_socketio(
     socketio: SocketIO,
-    recognizer: SpeechRecognizer,
-    transcript_service: TranscriptService,
-    meeting_processor: MeetingProcessor,
+    speech2text_service: Speech2TextService,
+    translation_service: TranslationService,
+    document_service: DocService
 ):
     socketio.on_namespace(
-        AudioNamespace("/audio_stream", socketio, recognizer, transcript_service, meeting_processor)
+        AudioNamespace("/audio_stream", socketio, speech2text_service, translation_service, document_service)
     )

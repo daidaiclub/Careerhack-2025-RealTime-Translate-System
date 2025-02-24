@@ -1,24 +1,14 @@
-import pandas as pd
-import time
+from abc import ABC, abstractmethod
 from realtime_translate_system.config import Language
-from realtime_translate_system.services.ai_service import LLMService
+from realtime_translate_system.services.llm import LLMService
 
-
-class TranslationService:
+class TranslationService(ABC):
     def __init__(self, llm_service: LLMService):
         self.llm_service = llm_service
 
-        self.generation_config = {
-            "candidate_count": 1,
-            "max_output_tokens": 1000,
-            "temperature": 0.6,
-            "top_p": 0.9,
-            "top_k": 5,
-        }
-
     def translate(
         self, content: str, previous_translation: dict = None, term_dict: str = ""
-    ) -> str:
+    ) -> dict:
         """
         進行翻譯並回傳結果
         """
@@ -131,8 +121,16 @@ class TranslationService:
         **Input Sentence:**  
         {content}
         """
+        
+        generation_config = {
+            "candidate_count": 1,
+            "max_output_tokens": 1000,
+            "temperature": 0.6,
+            "top_p": 0.9,
+            "top_k": 5,
+        }
 
-        response = self.llm_service.query([prompt], self.generation_config)
+        response = self.llm_service.query([prompt], generation_config)
         parsed_response = self.llm_service.parse_json_response(response)
 
         return {
@@ -142,110 +140,3 @@ class TranslationService:
             Language.DE: parsed_response.get(Language.DE, "None"),
             Language.JP: parsed_response.get(Language.JP, "None"),
         }
-
-    def load_term_dict(self, glossaries_path="", glossaries_paths=[]) -> str:
-        """
-        讀取並格式化專有名詞對應表
-        """
-        paths = (
-            {
-                Language.TW: glossaries_path + "/cmn-Hant-TW.csv",
-                Language.DE: glossaries_path + "/de-DE.csv",
-                Language.EN: glossaries_path + "/en-US.csv",
-                Language.JP: glossaries_path + "/ja-JP.csv",
-            }
-            if glossaries_path
-            else glossaries_paths
-        )
-
-        katakana_dict = {
-            "DDR Ratio": "ディーディーアール レシオ",
-            "EC": "イルシ",
-            "ECS": "イルシエス",
-            "ECCP": "イルシシーピー",
-            "ECN": "イルシエヌ",
-            "Emergency stop": "エマージェンシー ストップ",
-            "Alignment mark": "アライメント マーク",
-            "ALP": "エーエルピー",
-            "STB": "エスティービー",
-            "STK": "エスティーケー",
-            "Route": "ルート",
-            "Scrap": "スクラップ",
-            "Sorter": "ソーター",
-            "Split": "スプリット",
-            "夜勤": "ヤキン",
-            "準夜勤": "ジュンヤキン",
-            "日勤": "ニッキン",
-            "マスク": "マスク",
-            "DP": "ディーピー",
-            "SGP": "エスジーピー",
-            "ETP": "イーティーピー",
-            "Cloud Run": "クラウド ラン",
-            "Cloud Function": "クラウド ファンクション",
-            "BigQuery": "ビッグクエリ",
-            "Pub/Sub": "パブサブ",
-            "Cloud SQL": "クラウド エスキューエル",
-            "Artifact Registry": "アーティファクト レジストリ",
-            "Cloud Storage": "クラウド ストレージ",
-            "GKE": "ジーケーイー",
-            "Vertex AI": "バーテックス エーアイ",
-        }
-
-        dfs = {lang: pd.read_csv(path) for lang, path in paths.items()}
-        
-        
-        formatted_term_dict = "\n".join([
-            f"- **{dfs[Language.EN].iloc[i]['Proper Noun ']}**:"
-            f"\n  - zh: {dfs[Language.TW].iloc[i]['Proper Noun ']}, "
-            f"en: {dfs[Language.EN].iloc[i]['Proper Noun ']}, "
-            f"de: {dfs[Language.DE].iloc[i]['Proper Noun ']}, "
-            f"jp: {dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.EN].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])}"
-            f"\n  - **Description**: {dfs[Language.EN].iloc[i]['Description']}"
-            for i in range(len(dfs[Language.EN]))
-        ])
-
-        # formatted_term_dict = "\n".join(
-        #     [
-        #         f"- {dfs[Language.EN].iloc[i]['Proper Noun ']}: {dfs[Language.TW].iloc[i]['Proper Noun ']} (繁體中文), "
-        #         f"{dfs[Language.EN].iloc[i]['Proper Noun ']} (英文), {dfs[Language.DE].iloc[i]['Proper Noun ']} (德文), "
-        #         f"{dfs[Language.JP].iloc[i]['Proper Noun ']} / {katakana_dict.get(dfs[Language.JP].iloc[i]['Proper Noun '], dfs[Language.JP].iloc[i]['Proper Noun '])} (日文)"
-        #         for i in range(len(dfs[Language.EN]))
-        #     ]
-        # )
-
-        return formatted_term_dict
-
-
-if __name__ == "__main__":
-    transcripts = """
-Hello everyone. Today we are going to discuss the issue regarding DDR ratio. It was found out that the ratio on DP is quite high this week. Does Martin know the reason?
-Es tut mir leid, ich hatte gestern Nachtschicht und habe die Angelegenheiten an Lisa übergeben, er kann den Grund erklären.
-"""
-
-    text_list = transcripts.split("\n")
-
-    llm_service = LLMService("gemini-1.5-flash-002")
-    service = TranslationService(llm_service)
-    total_time = 0
-
-    import pathlib
-
-    term_dict_path = pathlib.Path(__file__).parent.parent / "glossaries"
-    term_dict = service.load_term_dict(str(term_dict_path))
-
-    import json
-
-    previous_translation = None
-    for text in text_list:
-        if not text.strip():
-            continue
-        start_time = time.time()
-        result = service.translate(
-            text.strip(), previous_translation, term_dict=term_dict
-        )
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        total_time += time.time() - start_time
-
-        previous_translation = result
-
-    print(f"Total time: {total_time}, Average time: {total_time/len(text_list)}")

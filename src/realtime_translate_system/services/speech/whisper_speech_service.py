@@ -4,11 +4,10 @@ import torch
 import webrtcvad
 import whisper
 from typing import Callable
-from realtime_translate_system.services import SpeechRecognizer
 import noisereduce as nr
+from .speech2text_service import Speech2TextService
 
-
-class WhisperSpeechRecognizer(SpeechRecognizer):
+class WhisperSpeech2TextService(Speech2TextService):
     """Whisper Speech Recognizer class"""
 
     def __init__(self, model_size="large"):
@@ -82,7 +81,7 @@ class WhisperSpeechRecognizer(SpeechRecognizer):
 
 if __name__ == "__main__":
     from pathlib import Path
-    recognizer = WhisperSpeechRecognizer()
+    recognizer = WhisperSpeech2TextService()
 
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
     # audio_path = BASE_DIR / "dataset" / "training.wav"

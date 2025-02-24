@@ -9,7 +9,7 @@ doc_bp = Blueprint("doc", __name__)
 @doc_bp.route("/test", methods=["GET"])
 def get_doeityocs():
     print("🔹 測試插入會議記錄...")
-    current_app.container.database_service().insert_meeting(
+    current_app.container.database_service().insert_document(
         title="區塊鏈與金融科技",
         transcript_chinese="區塊鏈技術已被廣泛應用於金融科技領域。",
         transcript_english="Blockchain technology has been widely applied in the fintech industry.",
@@ -24,7 +24,7 @@ def get_doeityocs():
 
 @doc_bp.route("/", methods=["GET"])
 def get_docs():
-    docs = current_app.container.database_service().get_meetings()
+    docs = current_app.container.database_service().get_documents()
     return jsonify([doc.to_dict() for doc in docs])
 
 
@@ -80,7 +80,7 @@ def update_doc():
     transcript_german = data.get("transcript_german")
     transcript_japanese = data.get("transcript_japanese")
 
-    _, keywords = current_app.container.meeting_processor().gen_title_keywords(
+    _, keywords = current_app.container.document_service().gen_title_keywords(
         transcript_chinese
     )
 
@@ -91,7 +91,7 @@ def update_doc():
     if not doc:
         return jsonify({"error": "Doc not found"}), 404
 
-    current_app.container.database_service().update_meeting(
+    current_app.container.database_service().update_document(
         doc_id=doc_id,
         title=title,
         transcript_chinese=transcript_chinese,

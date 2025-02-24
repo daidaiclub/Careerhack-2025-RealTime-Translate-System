@@ -12,10 +12,12 @@ python-dotenv
 torch
 vertexai
 google-cloud-speech
-webrtcvad
+webrtcvad-wheels
 Werkzeug
 python-Levenshtein
 mecab-python3
 unidic-lite
 psycopg2-binary
+noisereduce
+librosa
 git+https://github.com/openai/whisper.git@517a43

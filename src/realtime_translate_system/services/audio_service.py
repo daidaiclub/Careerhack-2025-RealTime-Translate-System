@@ -1,7 +1,7 @@
 import os
 from realtime_translate_system.extensions import socketio
 from realtime_translate_system.config import Language
-from .speech_recongizer import SpeechRecognizer
+from .speech.speech2text_service import SpeechRecognizer
 from .transcript_service import TranscriptService
 from .meeting_service import MeetingProcessor
 import noisereduce as nr

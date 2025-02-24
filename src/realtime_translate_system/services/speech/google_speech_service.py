@@ -6,10 +6,9 @@ from google.cloud.speech_v2.types import cloud_speech
 from typing import Generator, List, Callable
 from pydub import AudioSegment
 from realtime_translate_system.config import Config
-from realtime_translate_system.services import SpeechRecognizer
+from .speech2text_service import Speech2TextService
 
-
-class GoogleSpeechRecognizer(SpeechRecognizer):
+class GoogleSpeech2TextService(Speech2TextService):
     def __init__(
         self, location: str = "us-central1", project_id: str = None, *args, **kwargs
     ):
@@ -161,7 +160,7 @@ class GoogleSpeechRecognizer(SpeechRecognizer):
 if __name__ == "__main__":
     from pathlib import Path
 
-    recognizer = GoogleSpeechRecognizer(
+    recognizer = GoogleSpeech2TextService(
         location=Config.LOCATION, project_id=Config.PROJECT_ID
     )
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent

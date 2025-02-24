@@ -1,20 +1,13 @@
 import numpy as np
 from typing import List
-from realtime_translate_system.services.ai_service import EmbeddingService
 from realtime_translate_system.models.doc import Doc
 from realtime_translate_system.models import db
 from sqlalchemy import text, desc
 from datetime import datetime
+from database_service import DatabaseService
 
-class DatabaseService:
-    def __init__(self, embedding_service: EmbeddingService):
-        self.embedding_service = embedding_service
-
-    def get_text_embedding(self, text: str) -> np.ndarray:
-        """使用 Google Vertex AI 取得文本的嵌入向量 (768 維)"""
-        return np.array(self.embedding_service.get_embedding(text))
-
-    def insert_meeting(
+class SQLAlchemyDatabaseService(DatabaseService):
+    def insert_document(
         self,
         title: str,
         transcript_chinese: str,
@@ -74,19 +67,19 @@ class DatabaseService:
             print(f"插入失敗: {e}")
             return None
 
-    def get_meeting(self, doc_id: int) -> Doc:
+    def get_document(self, doc_id: int) -> Doc:
         """獲取 `documents` 表中的一筆資料，並返回字典包含內容與 `type()`"""
         try:
-            meeting = db.session.query(Doc).filter_by(id=doc_id).first()
+            document = db.session.query(Doc).filter_by(id=doc_id).first()
 
-            if meeting:
+            if document:
                 # meeting_data = {}
                 # print("📄 會議記錄內容：")
                 # for column in Doc.__table__.columns:
                 #     value = getattr(meeting, column.name)
                 #     meeting_data[column.name] = {"value": value, "type": type(value).__name__}
                 #     print(f"{column.name}: {value} (type: {type(value).__name__})")
-                return meeting
+                return document
             else:
                 print("沒有找到任何會議記錄。")
                 return None
@@ -96,7 +89,7 @@ class DatabaseService:
             print(f"❌ 查詢失敗: {e}")
             return None
 
-    def get_meetings(self) -> List[Doc]:
+    def get_documents(self) -> List[Doc]:
         """獲取所有會議記錄"""
         # try:
         #     self.cur.execute("SELECT id, title, created_at, updated_at, content, embedding, keywords FROM Docs;")
@@ -112,7 +105,7 @@ class DatabaseService:
             return []
 
 
-    def search_meetings(
+    def search_documents(
         self, query_embedding: List[float], top_k: int = 5
     ) -> List[Doc]:
         """透過關鍵字搜尋會議記錄，返回 `top_k` 筆結果，並包含所有欄位"""
@@ -168,7 +161,7 @@ class DatabaseService:
             db.session.rollback()
             return []
 
-    def update_meeting(
+    def update_document(
         self,
         doc_id: int,
         title: str,
@@ -206,10 +199,11 @@ class DatabaseService:
 
 
 if __name__ == "__main__":
-    embedding_service = EmbeddingService("text-multilingual-embedding-002")
+    from realtime_translate_system.services.embedding import VertexEmbeddingService
+    embedding_service = VertexEmbeddingService("text-multilingual-embedding-002")
     db_service = DatabaseService(embedding_service=embedding_service)
 
-    db_service.insert_meeting(
+    db_service.insert_document(
         title="AI 發展趨勢",
         transcript_chinese="人工智能正在快速發展，對各行各業產生深遠影響。",
         transcript_english="Artificial intelligence is rapidly evolving and has a profound impact on various industries.",
