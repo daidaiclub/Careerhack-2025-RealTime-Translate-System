@@ -39,9 +39,7 @@ def create_app() -> Flask:
     init_blueprints(app)
     register_audio_sockets(
         app,
-        container.recognizer,
-        container.transcript_service,
-        container.meeting_processor,
+        container.audio_service
     )
     register_chat_socket(app, container.meeting_processor)
 

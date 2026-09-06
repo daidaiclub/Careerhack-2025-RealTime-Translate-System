@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
 
 class GlossaryService(ABC):
-    @abstractmethod
-    def load_term_dict(self, glossaries_path="", glossaries_paths=[]) -> str:
-        pass
+    def __init__(self):
+        self.term_dicts = {}
     
     @abstractmethod
     def process_text(self, input_text: str, lang: str = None):

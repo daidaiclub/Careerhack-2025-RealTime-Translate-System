@@ -22,17 +22,15 @@ def upload_file():
     if file.filename == "":
         return jsonify({"error": "沒有選擇文件"}), 400
     
-    print(file.filename)
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
-        print(filepath)
 
         socketio = app.container.socketio()
         audio_service = app.container.audio_service()
         socketio.start_background_task(
-            audio_service.process_audio, filename
+            audio_service.process_audio_file, filepath
         )
 
         return jsonify({"message": "文件上傳成功", "filename": filename})

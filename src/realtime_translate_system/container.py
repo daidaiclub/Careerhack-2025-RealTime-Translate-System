@@ -1,5 +1,7 @@
 from dependency_injector import containers, providers
 from realtime_translate_system.extensions import socketio
+from realtime_translate_system.repository.doc_repository import DocRepository
+from realtime_translate_system.services.audio import AudioService
 from realtime_translate_system.services.speech import (
     GoogleSpeech2TextService,
     WhisperSpeech2TextService,
@@ -7,7 +9,6 @@ from realtime_translate_system.services.speech import (
 from realtime_translate_system.services.llm import VertexLLMService
 from realtime_translate_system.services.embedding import VertexEmbeddingService
 from realtime_translate_system.services.translation import TranslationService
-from realtime_translate_system.services.database import SQLAlchemyDatabaseService
 from realtime_translate_system.services.document import RAGService
 
 
@@ -24,10 +25,6 @@ class Container(containers.DeclarativeContainer):
         WhisperSpeech2TextService, model_size="turbo"
     )
 
-    # recognizer = providers.Singleton(
-    #     GoogleSpeechRecognizer, location=config.LOCATION, project_id=config.PROJECT_ID
-    # )
-
     # term_matcher = providers.Singleton(
     #     TermMatcher,
     #     file_paths=config.FILE_PATHS,
@@ -42,14 +39,14 @@ class Container(containers.DeclarativeContainer):
         VertexEmbeddingService, model_name="text-multilingual-embedding-002"
     )
 
-    database_service = providers.Singleton(
-        SQLAlchemyDatabaseService, embedding_service=embedding_service
+    doc_repostiory = providers.Singleton(
+        DocRepository, embedding_service=embedding_service
     )
 
     document_service = providers.Singleton(
         RAGService,
         llm_service=llm_service_pro,
-        db_service=database_service,
+        db_service=doc_repostiory,
         embedding_service=embedding_service,
     )
 

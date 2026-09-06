@@ -3,17 +3,18 @@ import MeCab
 import pandas as pd
 import re
 from fuzzywuzzy import fuzz
+from realtime_translate_system.services.glossary.glossary_service import GlossaryService
 
 
-class TermMatcher:
+class TermMatcher(GlossaryService):
     def __init__(self, file_paths: dict, threshold: int = 100):
         """
         初始化 TermMatcher，支援多語言企業術語比對
         :param file_paths: 字典 { "語言名稱": "對應的 CSV 路徑" }
         :param threshold: 相似度閥值 (0-100)
         """
+        super().__init__()
         self.threshold = threshold
-        self.term_dicts = {}  # 存放不同語言的術語字典
         self.mecab = MeCab.Tagger("-Owakati")
 
         # 讀取每個語言的企業術語
@@ -200,64 +201,31 @@ if __name__ == "__main__":
     matcher = TermMatcher(Config.FILE_PATHS)
 
     input_text = '''
-
 大家好。今天的會議主要是請Ivan介紹他們的新系統。為加快生產速度並減少錯誤，我們已請Ivan開發AI平台來協助各位的日常工作任務。
-
 謝謝Daisy，今天很高興可以和大家介紹我們的新系統SGP，該系統包含了GenAI的服務以及Reg的服務，不只可以安全地在公司使用GenAI的服務，各位也可以將技術文件、會議內容等文件上傳到系統上，根據SGP來整理文件內容以及問答。
-
 工廠裡的ALP經常出問題。
-
 主要原因是，如果埠口還有晶圓，機械手臂會先嘗試抓取晶圓，這經常導致阻塞。
-
 這個系統能解決這個問題嗎？
-
 除了既定的策略外，也可以加入產能考量來判斷是否應該讓下一批貨物進入生產線。
-
 新工廠有很多新人，STB 之後該做什麼，以及如何修復 Scrap 都不太清楚。這個系統可以幫助我們嗎？
-
 沒問題，只要你們將技術文件以及流程說明整理好，上傳到SGP系統後，JunAI就會處理這些資料，你們就能直接問JunAI現在該做什麼了。
-
 上傳的技術文件將如何處理？
-
 使用者可以透過我們部署在Cloudron上的系統查找Cloud SQL中的資料。放心，所有服務都透過金鑰加密來確保資料安全。
-
 我希望艾布能盡快發布這個系統。這個系統在新工廠將會非常有用。
-
 請告知馬丁注意 ALP 的問題，並依序執行。
-
 好歹
-
 我沒有聽過你說了。
-
 今天的會議到此結束。感謝各位的參與。
-
 謝謝
-
 謝謝,拜拜。''' 
 
     for text in input_text.split("\n"):
         if text:
             print(f"=== {text} ===")
             explains, similarity_scores, annotated_text = matcher.process_text(text, "Traditional Chinese")
-            # print("分詞結果：", explains)
-            # print("\n最終偵測到的專有名詞：")
-            # for token, term, score, description in similarity_scores:
-            #     print(f"word: {token}, term: {term}, similarity: {score}%, desc: {description}")
-
             print("\n帶註釋的文本：")
             print(annotated_text)
             print()
-
-#     merged_tokens, final_matched, annotated_text = matcher.process_text(
-#         input_text, "Traditional Chinese"
-#     )
-#     print("分詞結果：", merged_tokens)
-#     print("\n最終偵測到的專有名詞：")
-#     for token, term, score, description in final_matched:
-#         print(f"word: {token}, term: {term}, similarity: {score}%, desc: {description}")
-
-#     print("\n帶註釋的文本：")
-#     print(annotated_text)
 
     # 處理多語言文本
     text_to_annotate = {
